@@ -51,20 +51,71 @@ The simulator SHALL stream glasses-like data over a stable interface:
 
 ---
 
-## 4. Architecture (recommended)
+## 4. Architecture (two-stack recommended)
 
 ```mermaid
 flowchart LR
-  phone[Android Simulator App] --> cap[Sensor Capture Layer]
-  cap --> mux[Timestamp and Stream Mux]
-  mux --> tx[Transport API]
-  tx --> client[Consumer App or Service]
-  mux --> rec[Recorder]
-  rec --> replay[Replay Engine]
-  replay --> tx
+  subgraph P[Phone Stack - Android Simulator App]
+    UI[Simulator UI]
+    CFG[Profile and Config Service]
+    CTRL[Control API Service]
+    CAM[Camera Stream Service]
+    AUD[Audio Stream Service]
+    IMU[IMU Stream Service]
+    CLK[Clock and Timestamp Service]
+    MUX[Stream Mux and Sequencer]
+    SER[Serializer and Packetizer]
+    NET[Transport Service]
+    REC[Recorder]
+    REP[Replay Engine]
+    HLT[Health and Telemetry Service]
+  end
+
+  subgraph C[Consumer Stack - Dev Client or Backend]
+    GW[Ingress Gateway]
+    DEMUX[Demux and Schema Validator]
+    BUF[Per Stream Buffers]
+    APP[Consumer App Logic]
+    OBS[Observability and Metrics]
+  end
+
+  UI --> CFG
+  UI --> CTRL
+  CFG --> CAM
+  CFG --> AUD
+  CFG --> IMU
+  CFG --> HLT
+  CTRL --> CAM
+  CTRL --> AUD
+  CTRL --> IMU
+  CAM --> CLK
+  AUD --> CLK
+  IMU --> CLK
+  CLK --> MUX
+  CAM --> MUX
+  AUD --> MUX
+  IMU --> MUX
+  MUX --> SER
+  SER --> NET
+  MUX --> REC
+  REC --> REP
+  REP --> SER
+  HLT --> NET
+
+  NET --> GW
+  GW --> DEMUX
+  DEMUX --> BUF
+  BUF --> APP
+  DEMUX --> OBS
+  APP --> OBS
+
+  APP -. control .-> CTRL
+  OBS -. metrics .-> HLT
 ```
 
-**Requirement:** transport and schema must be versioned so real glasses can replace simulator with minimal client changes.
+**Requirement:** transport and schema SHALL be versioned so real glasses can replace the simulator with minimal client changes.
+
+**Path semantics:** camera/audio/IMU are data-plane streams; control and profile updates are control-plane; health/metrics are observability-plane.
 
 ---
 
