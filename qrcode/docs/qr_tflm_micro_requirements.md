@@ -9,7 +9,7 @@
 
 ## 1. Purpose
 
-Ship a **small on-device neural model** (TensorFlow Lite Micro) that improves **QR discovery and geometry estimation** under difficult real-world capture on smart glasses: rolling shutter, motion blur, defocus, glare, curved and specular packaging, and cluttered backgrounds.
+Ship a **small on-device neural model** (TensorFlow Lite Micro) that improves **QR discovery** and **geometry-related outputs** (see **§2.1.1** for **ROI estimation** vs **full corner geometry**) under difficult real-world capture on smart glasses: rolling shutter, motion blur, defocus, glare, curved and specular packaging, and cluttered backgrounds.
 
 The model is expected to pair with a **traditional software QR decoder** (decode remains outside the TFLM graph unless a future phase explicitly expands scope). Keeping decode out of TFLM is the default approach to meet the **≤ 250KB** model budget and to keep latency predictable.
 
@@ -31,6 +31,17 @@ The model is expected to pair with a **traditional software QR decoder** (decode
 - **Robustness** to: range (expressed as **angular subtense** of the code, not only distance), motion blur, defocus, glare and specular highlights, low light, partial occlusion, perspective skew, in-plane rotation, modest out-of-plane rotation, **curvature**, difficult materials (**including a shiny metal can**), reflective/transmissive media, and print defects.
 
 - **Interface contract** between the model output and the decoder (coordinate frame, tensor semantics, thresholds, max proposals).
+
+#### 2.1.1 Geometry vs ROI estimation (clarification)
+
+In this document, **geometry estimation** is an umbrella term for any model output that **localizes the QR in the image** well enough for downstream **warp, crop, or focal decode**. Two common levels are:
+
+| Level | Typical model output | Role in pipeline |
+| --- | --- | --- |
+| **ROI estimation** | **Axis-aligned bounding box** (optionally with confidence / quality) | Cheap crop or scale normalization to a fixed thumbnail; may be sufficient if the **software decoder** is robust on skewed/perspective inputs at that resolution, or if a **second stage** (classical or ML) refines geometry inside the ROI. |
+| **Full geometry** | **Four corner keypoints** (or equivalent homography parameters) | **Homography-ready** rectification before decode; usually stronger under heavy perspective, curvature-as-perspective, and tight module budgets. |
+
+**Requirement — to be confirmed:** The program SHALL confirm whether the **contractual minimum** for v1 is **ROI estimation only**, **four-corner geometry**, or **both** (e.g., ROI for attention + corners inside ROI). Until that decision is recorded here and in the handoff spec (**§4**), treat **M-5**, dataset **corner vs bbox labels** (**§6.3**), and **geometry error** KPIs (**§7**) as **provisional**.
 
 ### 2.2 Out of scope (explicit)
 
@@ -85,6 +96,7 @@ flowchart LR
 | **M-3** | **Size accounting (must pick one and use it in KPIs):** either (a) **int8 weights file size only**, or (b) **weights + model metadata + interpreter overhead** required to run the graph. If ambiguous, report **both** in validation. |
 | **M-4** | **Quantization:** default **int8** full-integer path; document representative calibration / representative dataset for conversion. |
 | **M-5** | **Outputs:** minimum acceptable is **four corners** *or* **axis-aligned bbox + quality score**; additional heads only with justified metrics. |
+| **M-5a** | **ROI vs geometry contract (pending confirmation):** Program SHALL confirm the v1 **minimum output contract** per **§2.1.1** (ROI-only, four-corner, or both). Acceptance tests and label tolerances SHALL align with the confirmed choice. |
 | **M-6** | **Throughput:** state target **effective FPS** at a fixed **post-ROI** resolution (e.g., QVGA/VGA thumbnail), not undefined full-sensor paths. |
 | **M-7** | **Ops / delegates:** document allowed TFLM op subset and whether an NPU/DSP delegate is in scope for a given SKU. |
 
@@ -172,7 +184,8 @@ Measure under **fixed** conditions: camera mode, ROI resolution, CPU/DSP clock p
 ## 12. Open decisions
 
 1. **ML boundary:** geometry-only vs adding a small **QR vs clutter** classifier head.  
-2. **Success metric weighting:** emphasize **decoder success** over pure detection mAP for product acceptance.
+2. **Success metric weighting:** emphasize **decoder success** over pure detection mAP for product acceptance.  
+3. **ROI vs full geometry (must confirm):** Lock the v1 contractual minimum per **§2.1.1** / **M-5a** — **ROI estimation only**, **four-corner geometry**, or **both** — including implications for warp/crop stages (**§4**) and whether “geometry error” in **§7** applies to corners, bbox IoU, or both.
 
 ---
 
@@ -185,6 +198,8 @@ Measure under **fixed** conditions: camera mode, ROI resolution, CPU/DSP clock p
 | **Version** | QR size class (V1 smallest grid, up to V40) |
 | **Mask** | One of eight XOR patterns applied in the QR standard |
 | **Micro QR** | Smaller ISO symbol; optional stretch goal |
+| **ROI estimation** | Predicting a **region of interest** (here: typically an **axis-aligned bbox**) that covers the QR; weaker than full corner geometry for rectification but may suffice for pipeline design (**§2.1.1**). |
+| **Full geometry (corners)** | **Four corner keypoints** (or homography) describing the QR outline in the image; supports explicit warp-before-decode (**§2.1.1**). |
 
 ---
 
