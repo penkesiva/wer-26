@@ -62,6 +62,8 @@ sequenceDiagram
 
 Encode as compact URI (example): `blep://pair?mac=AA:BB:CC:DD:EE:FF&tok=3f9a12c0` — keep payload **~≤100 chars** for low QR version.
 
+**Role lock (v1):** QR carries **phone identity**. Glasses initiate BLE connection to the phone. The phone does **not** need glasses MAC in QR or pre-known before pairing; it learns glasses identity during connection and stores it after bonding.
+
 **QR graphic:** Model 2, **EC M**, target **V3–V5**; **≥200×200 px** on phone; quiet zone ≥4 modules; **black on white** only in v1.
 
 ---
@@ -117,11 +119,11 @@ Encode as compact URI (example): `blep://pair?mac=AA:BB:CC:DD:EE:FF&tok=3f9a12c0
 
 ---
 
-## 10. Open decisions
+## 10. Decisions and open items
 
 | # | Decision |
 | --- | --- |
-| **Q-1** | QR carries **phone MAC** (glasses connect) vs **glasses MAC** (phone connects) — locks BLE roles. |
+| **Q-1 (locked)** | **Selected:** QR carries **phone MAC** and glasses initiate BLE connection. Phone learns glasses identity at connection/bond time (no pre-known glasses MAC required). |
 | **Q-2** | Token TTL value. |
 | **Q-3** | OOB stretch: feasible on glasses stack? |
 | **Q-4** | U-4 fallback in v1? |
