@@ -2,7 +2,7 @@
 
 **Platform:** Mobile phone companion app (on-device inference)  
 **Document type:** product / engineering requirements (lean + feasibility)  
-**Revision:** 0.1 · **Date:** 2026-04-19
+**Revision:** 0.2 · **Date:** 2026-04-19
 
 ---
 
@@ -10,7 +10,7 @@
 
 Use the phone as an on-device vision assistant for glasses by generating captions from images sent by glasses, then returning concise visual cues for downstream UX and agent workflows.
 
-Primary goal: avoid always depending on cloud vision models for routine caption tasks.
+Primary goal: **content triage** for save/retrieve workflows using short metadata text, while avoiding always depending on cloud vision models for routine caption tasks.
 
 ---
 
@@ -48,17 +48,17 @@ Recommended strategy: **mobile on-device first**, with optional cloud fallback f
 
 ### 4.1 Core user-facing use cases
 
-1. **Quick scene summary**  
+1. **Content triage**  
+   Generate short metadata text for saving/retrieving moments.
+
+2. **Quick scene summary**  
    "What am I looking at?" style short caption (one sentence).
 
-2. **Accessibility cue**  
+3. **Accessibility cue**  
    Describe nearby objects/labels at a glance for low-vision support.
 
-3. **Task assistance**  
+4. **Task assistance**  
    Brief context line for workflow steps (for example: "coffee machine panel with two buttons and a knob").
-
-4. **Content triage**  
-   Generate short metadata text for saving/retrieving moments.
 
 5. **Agent handoff context**  
    Send compact caption as context to local/remote assistant without uploading every full-resolution frame.
@@ -97,6 +97,7 @@ Recommended strategy: **mobile on-device first**, with optional cloud fallback f
 | --- | --- |
 | **C-1** | System SHALL accept image capture requests from glasses and run caption inference locally on phone. |
 | **C-2** | Output SHALL include `{caption_text, confidence_score, model_version, timestamp}`. |
+| **C-2a** | For v1 content triage, output SHALL include compact metadata fields when possible (for example: `entities[]`, `scene_tag`, `action_tag`), in addition to `caption_text`. |
 | **C-3** | System SHALL support configurable caption style (`brief`, `detailed`) with v1 default `brief`. |
 | **C-4** | System SHALL support confidence-based fallback action (`retry local`, `ask recapture`, `optional cloud`). |
 | **C-5** | System SHALL cache recent results for duplicate frame suppression within a short window. |
@@ -185,6 +186,7 @@ flowchart LR
 | KPI | Definition | Target |
 | --- | --- | --- |
 | **Caption latency p95** | Capture received -> caption emitted | <= 1200 ms |
+| **Retrieval uplift (primary)** | Improvement in save/retrieve task success vs no-caption baseline on golden set | TBD |
 | **Useful caption rate** | Human-rated "useful" on golden set | TBD % |
 | **Fallback rate** | % requests escalated beyond local path | TBD % |
 | **Crash/OOM rate** | Caption sessions causing app failure | ~0 |
