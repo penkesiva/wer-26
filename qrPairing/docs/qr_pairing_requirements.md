@@ -1,15 +1,14 @@
 # QR Code Pairing — Requirements
 
-**Feature:** QR-initiated BLE device pairing  
-**Devices:** Smart glasses (camera) ↔ Companion mobile app  
-**Document type:** Product / engineering requirements  
-**Revision:** 0.1 · **Date:** 2026-04-19
+**Feature:** QR-initiated BLE pairing  
+**Flow:** Companion app shows QR → glasses camera scans → glasses connect by decoded MAC  
+**Revision:** 0.2 · **Date:** 2026-04-19
 
 ---
 
 ## 1. Purpose
 
-Enable a **frictionless, first-time BLE pairing** experience between smart glasses and a companion mobile app by having the **glasses camera scan a QR code** displayed on the **companion app screen**. The QR code carries enough information for the glasses to identify and connect to the correct peer device without requiring the user to manually select from a BLE scan list or enter a PIN.
+First-time **BLE** bond between **smart glasses** and **companion phone**: phone displays a **pairing QR**; glasses **decode** it and **open a BLE connection** without manual scan lists or PIN entry on glasses.
 
 ---
 
@@ -31,151 +30,128 @@ sequenceDiagram
 
 ---
 
-## 3. Scope
+## 3. Tech feasibility (glasses / RTOS / MCU)
 
-### 3.1 In scope
+| Topic | Verdict |
+| --- | --- |
+| **RTOS + MCU** | **Feasible.** QR decode is classical image + Reed–Solomon; no Linux required. |
+| **Decoder choice** | Prefer a **small QR-only** C library (e.g. **Quirc**-class): grayscale in, payload out. Avoid full multi-symbology stacks unless needed. |
+| **Cost drivers** | **Input size** (crop / downscale before decode), **RAM** for line buffers, **CPU** for binarization + RS — not RTOS itself. |
+| **SoC class (e.g. BES2800, Cortex-M33 / M55 / STAR-MC1)** | **Comfortable** for pairing use: short payload, cooperative UX, **burst or low FPS** decode. Confirm **exact SKU**, **which core** owns the camera, and **SRAM budget** after BT/display stacks. |
+| **Screen QR** | **Moire / glare** are the main risk; mitigate with **resolution / exposure / ROI**, not a bigger OS. |
+| **ML** | **Not required** for v1 pairing decode. Optional ML elsewhere must not block pairing (see **P-6**). |
 
-- **QR generation** in the companion app (iOS and/or Android) encoding the pairing payload.
-- **QR scanning** via the **glasses on-device camera** and software/ML decode pipeline.
-- **BLE connection initiation** from glasses to companion app using the decoded MAC address.
-- **Pairing success / failure UX** on both glasses and companion app.
-- **Security baseline** appropriate for a medium-threat consumer pairing flow (see §7).
-
-### 3.2 Out of scope (explicit)
-
-| Item | Rationale |
-|---|---|
-| PIN / passkey entry via glasses | Requires input HID; not in this flow |
-| QR scanning by the phone camera | Role is reversed in this design; out of scope for v1 |
-| Wi-Fi / network credential delivery via QR | Separate feature track |
-| Full BLE stack implementation | Handled by OS BLE APIs; only the pairing trigger is in scope |
-| Cryptographic key exchange beyond BLE OOB | Out of scope for medium-security tier; noted as stretch goal |
+**Spike (required):** on-target **decode latency (p50/p95)**, **peak RAM**, **flash** for chosen library + buffer at agreed preview resolution.
 
 ---
 
-## 4. QR code payload specification
+## 4. Scope
 
-> **Status: to be confirmed** — the exact payload schema must be agreed between glasses firmware and companion app teams before implementation.
+**In:** App generates QR; glasses camera + **software** decode; BLE connect from decoded MAC; success/fail UX; **medium** consumer security (§8).
 
-### 4.1 Minimum viable payload (v1)
-
-| Field | Type | Notes |
-|---|---|---|
-| `ble_mac` | string · 17 chars · `XX:XX:XX:XX:XX:XX` | BLE MAC of the **companion app's host device** (the phone) |
-| `token` | string · 8–16 hex chars (optional) | Short-lived random token for replay protection; expires after `T` seconds (see §7) |
-
-**Encoded as:** a plain URI string or compact JSON, kept under **~100 characters** to stay within QR Version 3–4 (low module density → easy scanning from a phone screen at arm's length).
-
-Example URI form:
-```
-blep://pair?mac=AA:BB:CC:DD:EE:FF&tok=3f9a12c0
-```
-
-### 4.2 QR code parameters
-
-| Parameter | Value |
-|---|---|
-| Symbology | QR Code Model 2 (ISO/IEC 18004) |
-| Error correction | **M** (15%) — balances density and screen-scan robustness |
-| Version | V3–V5 (target; determined by payload length) |
-| Minimum display size | **200 × 200 px** at native screen resolution |
-| Quiet zone | 4 modules minimum |
-| Foreground / background | Black modules on white — no inverse or coloured QR in v1 |
+**Out:** PIN on glasses; phone-scans-glasses QR (v1); Wi-Fi-over-QR; implementing full BLE stack; strong OOB crypto beyond §8 stretch.
 
 ---
 
-## 5. Glasses-side requirements
+## 5. QR payload (v1 — confirm with firmware + app)
+
+| Field | Notes |
+| --- | --- |
+| `ble_mac` | Phone BLE MAC `XX:XX:XX:XX:XX:XX` |
+| `token` | Optional short random hex; TTL in §8 |
+
+Encode as compact URI (example): `blep://pair?mac=AA:BB:CC:DD:EE:FF&tok=3f9a12c0` — keep payload **~≤100 chars** for low QR version.
+
+**QR graphic:** Model 2, **EC M**, target **V3–V5**; **≥200×200 px** on phone; quiet zone ≥4 modules; **black on white** only in v1.
+
+---
+
+## 6. Glasses requirements
 
 | ID | Requirement |
-|---|---|
-| **P-1** | Glasses SHALL scan and decode the pairing QR in **≤ 3 seconds** from the moment the code is fully in view under normal indoor lighting. |
-| **P-2** | Glasses SHALL correctly decode the QR when the phone screen is held at **30–60 cm** from the glasses camera (typical arm-to-face distance). |
-| **P-3** | Glasses SHALL handle **screen glare and moiré** artefacts inherent in scanning an LCD/OLED display. |
-| **P-4** | After successful decode, glasses SHALL initiate a BLE connection to the decoded MAC within **500 ms**. |
-| **P-5** | On decode failure (timeout or repeated error), glasses SHALL surface a **user-visible error** and prompt a retry. |
-| **P-6** | The pairing QR scanner SHALL operate **independently** of any other ML inference pipeline (e.g. the TFLM geometry model) and SHALL NOT require that model to be loaded. |
+| --- | --- |
+| **P-1** | Decode ≤ **3 s** after QR fully in frame (indoor baseline). |
+| **P-2** | Works at **30–60 cm** phone–camera distance. |
+| **P-3** | Tolerate **LCD/OLED moiré and glare** within agreed lighting range. |
+| **P-4** | After decode, start BLE connect to MAC within **500 ms**. |
+| **P-5** | Decode failure → visible error + retry. |
+| **P-6** | Pairing decode path **standalone** — no dependency on optional ML stacks. |
 
 ---
 
-## 6. Companion app requirements
+## 7. Companion app requirements
 
 | ID | Requirement |
-|---|---|
-| **A-1** | The companion app SHALL generate and display the pairing QR on the **first-launch / onboarding screen** before BLE is active. |
-| **A-2** | The QR SHALL be **regenerated with a fresh token** each time the pairing screen is displayed (not cached from a previous session). |
-| **A-3** | The app SHALL display a **countdown or expiry indicator** if a token TTL is used (see §7). |
-| **A-4** | The app SHALL transition automatically to the BLE pairing OS prompt upon receiving an incoming connection from the decoded MAC. |
-| **A-5** | The app SHALL handle the case where the decoded MAC arrives **after token expiry** and prompt the user to refresh the QR. |
-| **A-6** | The app SHALL support both **iOS** and **Android** companion platforms. Exact OS version minima to be confirmed. |
+| --- | --- |
+| **A-1** | Show pairing QR on first-launch / onboarding before relying on BLE. |
+| **A-2** | New **token** each time the pairing screen is shown (no stale QR). |
+| **A-3** | If TTL: show **countdown** or clear expiry UX. |
+| **A-4** | On incoming BLE from glasses, surface **OS pairing** as needed. |
+| **A-5** | Expired token → prompt **refresh QR**. |
+| **A-6** | **iOS + Android**; min OS versions TBD. |
 
 ---
 
-## 7. Security requirements (medium-threat baseline)
+## 8. Security (medium baseline)
 
 | ID | Requirement |
-|---|---|
-| **S-1** | The QR payload SHALL include a **short-lived token** (recommended TTL: **60–120 seconds**) to prevent replay of a captured QR image. |
-| **S-2** | The token SHALL be **cryptographically random** (≥ 64 bits of entropy; e.g. `SecureRandom` / `CryptoKit`). |
-| **S-3** | The companion app SHALL reject any BLE connection attempt that arrives after the token TTL has expired and require a new QR to be displayed. |
-| **S-4** | The pairing QR SHALL NOT encode persistent credentials, passwords, or long-lived session keys. |
-| **S-5** | Post-pairing BLE bonding SHALL rely on **OS-level authenticated pairing** (e.g. Bluetooth LE Secure Connections with MITM protection where supported by both devices). |
+| --- | --- |
+| **S-1** | Token TTL **60–120 s** (pick one in impl). |
+| **S-2** | Token **CSPRNG**, ≥ **64 bits** entropy. |
+| **S-3** | Reject post-TTL connects; require new QR. |
+| **S-4** | No long-lived secrets in QR payload. |
+| **S-5** | Bonding uses **OS BLE** secure pairing where available. |
 
-> **Stretch goal:** BLE Out-of-Band (OOB) pairing using the QR payload as the OOB data blob for stronger MITM protection. This would replace the simple MAC + token scheme but requires firmware BLE stack support — confirm feasibility per SKU.
+**Stretch:** BLE **OOB** payload via QR — needs stack + product sign-off.
 
 ---
 
-## 8. UX requirements
+## 9. UX
 
 | ID | Requirement |
-|---|---|
-| **U-1** | The pairing QR screen on the companion app SHALL include a **plain-language instruction** (e.g. "Hold your glasses up and look at this code"). |
-| **U-2** | On successful pairing, both glasses and companion app SHALL show a **confirmation** (visual and/or haptic) within **1 second** of BLE bonding completion. |
-| **U-3** | The full pairing flow (QR display → scan → BLE connect → confirmed) SHALL complete in **≤ 15 seconds** under normal conditions. |
-| **U-4** | A **"Can't scan?"** fallback path SHALL be available (e.g. manual device selection from a BLE scan list or a support deep-link). |
+| --- | --- |
+| **U-1** | One-line instruction on QR screen (e.g. look at code through glasses). |
+| **U-2** | Success feedback on both sides within **1 s** of bond complete. |
+| **U-3** | E2E: QR shown → bonded ≤ **15 s** typical. |
+| **U-4** | **“Can’t scan?”** fallback (e.g. manual BLE pick) — v1 vs v2 TBD. |
 
 ---
 
-## 9. Open decisions
+## 10. Open decisions
 
-| # | Question | Needed to finalise |
-|---|---|---|
-| **Q-1** | **Payload owner:** Does the QR encode the **phone's** BLE MAC (phone advertises, glasses connect) or the **glasses'** MAC (glasses advertise, phone initiates after scan)? Each has different BLE role implications. | Firmware + app teams |
-| **Q-2** | **Token TTL:** 60 s vs 120 s vs user-refreshable with no auto-expiry? | Product / security decision |
-| **Q-3** | **OOB pairing stretch goal:** Is BLE OOB feasible on the glasses BLE stack and target OS versions? | BLE firmware team |
-| **Q-4** | **Fallback UX:** Is the manual BLE scan fallback (U-4) in scope for v1 or a v2 item? | Product |
-| **Q-5** | **OS version minima:** What iOS / Android minimum versions must the companion app support? Impacts `CoreBluetooth` / `BluetoothGatt` API choices. | Platform / product |
-| **Q-6** | **Multi-device:** Should pairing support connecting glasses to more than one phone (e.g. work + personal), and if so how is the bonding list managed? | Product |
-
----
-
-## 10. KPI table
-
-| KPI | Definition | Target | Status |
-|---|---|---|---|
-| **QR decode time** | Time from QR fully in frame → successful decode on glasses | ≤ 3 s (P-1) | TBD |
-| **BLE connect time** | Decode complete → BLE connection established | ≤ 2 s | TBD |
-| **E2E pairing time** | QR displayed → bonding confirmed | ≤ 15 s (U-3) | TBD |
-| **First-attempt success rate** | % of pairing attempts that succeed without retry (lab golden suite) | TBD % | TBD |
-| **Token replay rejection rate** | % of expired-token connections correctly rejected | 100% | TBD |
+| # | Decision |
+| --- | --- |
+| **Q-1** | QR carries **phone MAC** (glasses connect) vs **glasses MAC** (phone connects) — locks BLE roles. |
+| **Q-2** | Token TTL value. |
+| **Q-3** | OOB stretch: feasible on glasses stack? |
+| **Q-4** | U-4 fallback in v1? |
+| **Q-5** | Min iOS / Android. |
+| **Q-6** | Multi-phone bonding rules. |
 
 ---
 
-## 11. Glossary
+## 11. KPIs
+
+| KPI | Target |
+| --- | --- |
+| Decode (in frame → string) | ≤ 3 s |
+| Decode → BLE connected | ≤ 2 s |
+| E2E (QR shown → bonded) | ≤ 15 s |
+| First-try success (lab) | TBD % |
+| Expired-token reject | 100% |
+
+---
+
+## 12. Glossary
 
 | Term | Meaning |
-|---|---|
-| **BLE** | Bluetooth Low Energy |
-| **MAC** | Media Access Control address — hardware identifier for a BLE device |
-| **OOB** | Out-of-Band pairing — BLE pairing method where key exchange happens over a channel other than BLE (here: QR code) |
-| **TTL** | Time to live — duration after which a token or QR is considered expired |
-| **Bonding** | Persistent BLE pairing state stored on both devices so reconnection does not require re-pairing |
-| **MITM** | Man-in-the-middle — attack where a third party intercepts the pairing handshake |
+| --- | --- |
+| **BLE / MAC / bonding** | Standard Bluetooth LE terms. |
+| **OOB** | Out-of-band pairing data (here: via QR). |
+| **TTL** | Token lifetime. |
 
 ---
 
 ## References
 
-- Bluetooth Core Specification 5.x — LE Secure Connections, OOB pairing
-- ISO/IEC 18004 — QR Code standard
-- Apple CoreBluetooth documentation
-- Android BluetoothGatt / BluetoothLeScanner API documentation
+Bluetooth LE Secure Connections; ISO/IEC 18004 (QR); Apple CoreBluetooth; Android BluetoothGatt.
