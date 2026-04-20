@@ -18,15 +18,15 @@ Enable a **frictionless, first-time BLE pairing** experience between smart glass
 ```mermaid
 sequenceDiagram
   participant G as Glasses
-  participant C as Companion App (Phone)
+  participant C as Companion Phone App
 
-  C->>C: Generate & display QR code\n(encodes BLE MAC + pairing token)
-  G->>G: Glasses camera scans QR from phone screen
-  G->>G: Decode MAC address (+ optional token)
+  C->>C: Generate and display pairing QR payload
+  G->>G: Camera scans QR from phone screen
+  G->>G: Decode MAC address and optional token
   G->>C: Initiate BLE connection to decoded MAC
-  C->>G: BLE pairing handshake (OS-level)
+  C->>G: OS BLE pairing handshake
   G->>C: Pairing confirmed
-  C->>C: Persist bonding; proceed to onboarding
+  C->>C: Persist bonding then onboarding
 ```
 
 ---
