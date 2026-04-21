@@ -2,7 +2,19 @@
 
 **Platform:** Mobile phone companion app (on-device inference)  
 **Document type:** product / engineering requirements (lean + feasibility)  
-**Revision:** 0.4 · **Date:** 2026-04-19
+**Revision:** 0.5 · **Date:** 2026-04-19
+
+---
+
+## 0. Executive summary
+
+Smart glasses capture moments continuously, but users have no practical way to search or act on what they saw. Cloud vision APIs add latency, cost, and privacy risk.
+
+**The idea:** companion phone runs an **on-device caption/tag model** — glasses send a still on a discrete trigger; phone returns **short structured metadata** in under 2 seconds; stored as a **searchable memory**, no cloud required by default.
+
+**Why now:** compact VLMs now run on phone NPUs with triage-grade quality. Privacy-first, offline-capable, and cannot be replicated by a phone-only app.
+
+**Ask:** fund a **2–4 week feasibility spike** on 2 reference phones (latency, battery, quality) before committing to full build.
 
 ---
 
@@ -58,16 +70,19 @@ Recommended strategy: **mobile on-device first**, with optional cloud fallback f
 3. **Transit / commute navigation memory**  
    At unfamiliar transit stops, airports, or multi-level stations, capture a keyframe at a decision point (gate, platform, exit sign). Phone generates `location_cue` and `scene_context` tags. Stored with timestamp + GPS to fill indoor gaps where GPS alone fails.
 
-4. **Quick scene summary**  
+4. **Biometric-triggered visual context memory**  
+   When a health sensor (watch, ring, or glasses PPG) detects a **HR spike**, glasses capture a keyframe and phone generates a scene tag. Stored as `{timestamp, hr_value, scene_tag, activity_cue, thumbnail}` — answers "what was I doing when my heart rate spiked?" Note: requires **multi-stream timestamp sync**, HR debounce to suppress artifacts, and **stricter privacy/consent policy** (health + visual is a sensitive data class).
+
+5. **Quick scene summary**  
    "What am I looking at?" style short caption (one sentence).
 
-5. **Accessibility cue**  
+6. **Accessibility cue**  
    Describe nearby objects/labels at a glance for low-vision support.
 
-6. **Task assistance**  
+7. **Task assistance**  
    Brief context line for workflow steps (for example: "coffee machine panel with two buttons and a knob").
 
-7. **Agent handoff context**  
+8. **Agent handoff context**  
    Send compact caption as context to local/remote assistant without uploading every full-resolution frame.
 
 ### 4.2 System/ops use cases
