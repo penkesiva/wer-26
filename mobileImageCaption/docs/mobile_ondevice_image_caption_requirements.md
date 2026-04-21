@@ -2,7 +2,7 @@
 
 **Platform:** Mobile phone companion app (on-device inference)  
 **Document type:** product / engineering requirements (lean + feasibility)  
-**Revision:** 0.3 · **Date:** 2026-04-19
+**Revision:** 0.4 · **Date:** 2026-04-19
 
 ---
 
@@ -55,16 +55,19 @@ Recommended strategy: **mobile on-device first**, with optional cloud fallback f
 2. **Find my car (park event memory)**  
    On a **parking / end-of-drive event**, capture a still (or keyframe) from glasses and run on-device caption/tags on the phone so the moment is **easy to retrieve later** (“where did I park?”). Combine with **timestamp + GPS (when available) + thumbnail**; treat caption as a **cue**, not ground truth for level/zone/sign text. **Low-confidence outputs** SHALL avoid false precision (e.g. do not assert garage level from a blurry frame).
 
-3. **Quick scene summary**  
+3. **Transit / commute navigation memory**  
+   At unfamiliar transit stops, airports, or multi-level stations, capture a keyframe at a decision point (gate, platform, exit sign). Phone generates `location_cue` and `scene_context` tags. Stored with timestamp + GPS to fill indoor gaps where GPS alone fails.
+
+4. **Quick scene summary**  
    "What am I looking at?" style short caption (one sentence).
 
-4. **Accessibility cue**  
+5. **Accessibility cue**  
    Describe nearby objects/labels at a glance for low-vision support.
 
-5. **Task assistance**  
+6. **Task assistance**  
    Brief context line for workflow steps (for example: "coffee machine panel with two buttons and a knob").
 
-6. **Agent handoff context**  
+7. **Agent handoff context**  
    Send compact caption as context to local/remote assistant without uploading every full-resolution frame.
 
 ### 4.2 System/ops use cases
