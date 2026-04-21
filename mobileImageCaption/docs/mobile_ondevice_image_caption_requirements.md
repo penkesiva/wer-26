@@ -68,7 +68,8 @@ Recommended strategy: **mobile on-device first**, with optional cloud fallback f
    On a **parking / end-of-drive event**, capture a still (or keyframe) from glasses and run on-device caption/tags on the phone so the moment is **easy to retrieve later** (“where did I park?”). Combine with **timestamp + GPS (when available) + thumbnail**; treat caption as a **cue**, not ground truth for level/zone/sign text. **Low-confidence outputs** SHALL avoid false precision (e.g. do not assert garage level from a blurry frame).
 
 3. **Transit / commute navigation memory**  
-   At unfamiliar transit stops, airports, or multi-level stations, capture a keyframe at a decision point (gate, platform, exit sign). Phone generates `location_cue` and `scene_context` tags. Stored with timestamp + GPS to fill indoor gaps where GPS alone fails.
+   At unfamiliar transit stops, airports, or multi-level stations, capture a keyframe at a decision point (gate, platform, exit sign). Phone generates `location_cue` and `scene_context` tags. Stored with timestamp + GPS to fill indoor gaps where GPS alone fails.  
+   *Example:* User arrives at a large airport, looks at a departure board. Glasses capture a keyframe. Phone returns: `location_cue: "Gate B14"`, `scene_context: "airport terminal, departure board"`. Two hours later, user asks "which gate was I at?" and retrieves the tagged memory instantly — without scrolling through hundreds of photos.
 
 4. **Biometric-triggered visual context memory**  
    When a health sensor (watch, ring, or glasses PPG) detects a **HR spike**, glasses capture a keyframe and phone generates a scene tag. Stored as `{timestamp, hr_value, scene_tag, activity_cue, thumbnail}` — answers "what was I doing when my heart rate spiked?" Note: requires **multi-stream timestamp sync**, HR debounce to suppress artifacts, and **stricter privacy/consent policy** (health + visual is a sensitive data class).
