@@ -19,6 +19,18 @@ Define the KPI(s) clearly and make them measurable.
 - KPI calculation method:
 - Pass/fail threshold for this phase:
 
+### Segment KPI Targets (Fill Values Later)
+Use this to define separate KPI thresholds for lighting/background conditions.
+
+| Segment | Target Accuracy | Max False Trigger Rate | Max Miss Rate | Notes |
+| --- | --- | --- | --- | --- |
+| Low + simple |  |  |  |  |
+| Low + complex |  |  |  |  |
+| Ambient + simple |  |  |  |  |
+| Ambient + complex |  |  |  |  |
+| Bright + simple |  |  |  |  |
+| Bright + complex |  |  |  |  |
+
 ## 3) Iteration Loop (Repeat Until Target KPI Is Met)
 
 ### Iteration #: 
@@ -68,6 +80,13 @@ Track data coverage across critical conditions.
   - Ambient + complex:
   - Bright + simple:
   - Bright + complex:
+- Segment target check (from "Segment KPI Targets"):
+  - Low + simple: Pass/Fail
+  - Low + complex: Pass/Fail
+  - Ambient + simple: Pass/Fail
+  - Ambient + complex: Pass/Fail
+  - Bright + simple: Pass/Fail
+  - Bright + complex: Pass/Fail
 - Failure analysis summary:
 
 #### D. On-Device Deployment
@@ -89,6 +108,7 @@ Track data coverage across critical conditions.
 
 #### F. KPI Decision Gate
 - KPI achieved this iteration? (Yes/No):
+- All segment KPI targets passed? (Yes/No):
 - If yes:
   - Mark iteration complete.
   - Confirm feature-complete status.
