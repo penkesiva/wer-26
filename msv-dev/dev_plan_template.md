@@ -31,7 +31,24 @@ Use this to define separate KPI thresholds for lighting/background conditions.
 | Bright + simple |  |  |  |  |
 | Bright + complex |  |  |  |  |
 
-## 3) Iteration Loop (Repeat Until Target KPI Is Met)
+## 3) Timeline View (High-Level)
+Use this as a quick status snapshot for each iteration.
+
+Status legend:
+- Not Started
+- In Progress
+- Done
+- Blocked
+
+| Iteration | Start | End | Data Collection | Training | Validation | On-Device Deployment | Feature Complete Check | Gate Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 |  |  |  |  |  |  |  |  |
+| 2 |  |  |  |  |  |  |  |  |
+| 3 |  |  |  |  |  |  |  |  |
+| 4 |  |  |  |  |  |  |  |  |
+| 5 |  |  |  |  |  |  |  |  |
+
+## 4) Iteration Loop (Repeat Until Target KPI Is Met)
 
 ### Iteration #: 
 - Start date:
@@ -117,7 +134,7 @@ Track data coverage across critical conditions.
   - Define actions for next iteration:
   - Update next iteration KPI target:
 
-## 4) Iteration Tracker
+## 5) Iteration Tracker
 | Iteration | KPI Result | Passed? | Top Issue | Next Action |
 | --- | --- | --- | --- | --- |
 | 1 |  |  |  |  |
@@ -126,7 +143,7 @@ Track data coverage across critical conditions.
 | 4 |  |  |  |  |
 | 5 |  |  |  |  |
 
-## 5) Exit Criteria
+## 6) Exit Criteria
 The development loop ends only when all are true:
 - Target KPI is met or exceeded.
 - Performance is stable across:
@@ -135,7 +152,7 @@ The development loop ends only when all are true:
 - On-device constraints are satisfied.
 - Feature is marked complete with no critical blockers.
 
-## 6) Sign-Off
+## 7) Sign-Off
 - Engineering lead:
 - ML lead:
 - Product owner:
