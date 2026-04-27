@@ -48,6 +48,30 @@ Status legend:
 | 4 |  |  |  |  |  |  |  |  |
 | 5 |  |  |  |  |  |  |  |  |
 
+### Timeline Gantt View (Optional)
+Replace placeholder dates/durations as needed.
+
+```mermaid
+gantt
+    title MSV Dev Plan Timeline
+    dateFormat  YYYY-MM-DD
+    axisFormat  %b %d
+
+    section Iteration 1
+    Data Collection        :a1, 2026-05-01, 7d
+    Training               :a2, after a1, 5d
+    Model Validation       :a3, after a2, 4d
+    On-Device Deployment   :a4, after a3, 3d
+    Feature Complete Check :a5, after a4, 2d
+
+    section Iteration 2 (if KPI not met)
+    Data Collection        :b1, after a5, 7d
+    Training               :b2, after b1, 5d
+    Model Validation       :b3, after b2, 4d
+    On-Device Deployment   :b4, after b3, 3d
+    Feature Complete Check :b5, after b4, 2d
+```
+
 ## 4) Iteration Loop (Repeat Until Target KPI Is Met)
 
 ### Iteration #: 
