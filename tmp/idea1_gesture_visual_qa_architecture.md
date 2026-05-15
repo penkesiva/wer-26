@@ -11,10 +11,11 @@ flowchart LR
     subgraph GCol[" "]
         direction TB
         User([User])
+        TwoHand["<b>Two-handed close gesture</b><br/>~300–500 ms stability"]
         subgraph Glasses["<b><span style='font-size:22px'>Glasses</span></b>"]
             direction TB
             Cam["<b>Camera</b><br/>1 FPS frame buffer<br/>Best frame on gesture"]
-            GestCrop["<b>Gesture + crop</b><br/>Two-handed close · crop lock"]
+            GestCrop["<b>Gesture + crop</b><br/>Detect · crop lock"]
             Mic["<b>Mic & display</b>"]
         end
     end
@@ -43,8 +44,9 @@ flowchart LR
         LgC["<b>Cloud VLM / LLM</b><br/>Multimodal answers"]
     end
 
+    User --> TwoHand
+    TwoHand --> GestCrop
     Cam -->|"frames"| GestCrop
-    User --> GestCrop
     GestCrop -->|"① gesture + crop"| OrchVQ
     OrchVQ <-->|"② policy"| PolicyVQ
 
@@ -77,12 +79,14 @@ flowchart LR
     classDef legendCloud fill:#d1c4e9,stroke:#512da8,color:#111
     classDef legendFrame fill:#fafafa,stroke:#9e9e9e,color:#111
     classDef colHidden fill:none,stroke:none,color:#111
+    classDef userGesture fill:#e3f2fd,stroke:#1565c0,color:#111,stroke-width:2px
 
     style SSGC fill:#ede7f6,stroke:#7e57c2,stroke-width:2px
     style GCol fill:none,stroke:none
     style Glasses stroke:#0d47a1,stroke-width:2px
     style Mobile stroke:#e65100,stroke-width:2px
 
+    class TwoHand userGesture
     class Cam,Mic,GestCrop glasses
     class VA mobile
     class GGGC ggCore
