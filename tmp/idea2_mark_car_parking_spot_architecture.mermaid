@@ -22,7 +22,7 @@ flowchart LR
         subgraph SSGC["<b><span style='font-size:18px'>SS-Glasses-Core</span></b>"]
             direction TB
             PolicyCP["<b>EventPolicy:Park</b><br/>Gates · timing · negatives"]
-            OrchCP["<b>EventOrchestrator:Park</b><br/>Cue · capture · on-device VLM · save"]
+            OrchCP["<b>EventOrchestrator:Park</b><br/>Audio/UI cue · capture · on-device VLM · save"]
         end
         VLM["<b>On-device VLM</b><br/>Scene + OCR"]
         AMEM[("<b>Ambient-Memory</b><br/>Frames + text")]
@@ -43,7 +43,7 @@ flowchart LR
 
     Cam -->|"frames"| OrchCP
     OrchCP -->|"capture control"| Cam
-    OrchCP -->|"TTS / UI cue"| Mic
+    OrchCP -->|"audio/UI cue (TTS + display)"| Mic
 
     OrchCP --> VLM
     VLM --> OrchCP
