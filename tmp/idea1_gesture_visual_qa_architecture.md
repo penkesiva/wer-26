@@ -2,47 +2,55 @@
 
 ```mermaid
 %% Idea 1 — Gesture-Driven Image Crop for Visual Q&A · mermaid.live
-%% LR columns: Glasses | Mobile (voice assistant inside) — Mic↔VA across column boundary
-%% No on-device VLM on phone: crop on glasses → orchestrator → GG-Glasses-Core ↔ Cloud VLM
+%% TB: main diagram row on top, compact legend row below (tighter padding via init)
 %% <b>…</b> = bold title inside a box
-%%{init: {'flowchart': {'htmlLabels': true}}}%%
+%%{init: {'flowchart': {'htmlLabels': true, 'padding': 6, 'nodeSpacing': 20, 'rankSpacing': 28}}}%%
 
-flowchart LR
-    subgraph GCol[" "]
-        direction TB
-        User([User])
-        TwoHand["<b>Two-handed close gesture</b><br/>1–2 s visibility"]
-        subgraph Glasses["<b><span style='font-size:22px'>Glasses</span></b>"]
-            direction TB
-            Cam["<b>Camera</b><br/>1 FPS frame buffer<br/>Best frame on gesture"]
-            GestCrop["<b>Gesture + crop</b><br/>Detect · crop lock"]
-            Mic["<b>Mic & display</b>"]
-        end
-    end
-
-    subgraph Mobile["<b><span style='font-size:22px'>Mobile phone</span></b>"]
-        direction TB
-        VA["<b>Voice assistant</b><br/>Optional voice · hotword · follow-up · TTS · UI"]
-        subgraph SSGC["<b><span style='font-size:18px'>SS-Glasses-Core</span></b>"]
-            direction TB
-            PolicyVQ["<b>EventPolicy:VisualQA</b><br/>Gesture gates · stability · negatives"]
-            OrchVQ["<b>EventOrchestrator:VisualQA</b><br/>Crop"]
-            OEM["<b>OEM SDK</b><br/>gRPC · glasses transport"]
-        end
-        GGGC["<b>GG-Glasses-Core</b><br/>Cloud session · auth · multimodal client"]
-    end
-
-    CloudVLM["<b>Cloud VLM / LLM</b><br/>Multimodal Q&A"]
-
-    subgraph Legend["Legend"]
+flowchart TB
+    subgraph MainRow[" "]
         direction LR
-        LgG["<b>Glasses</b><br/>Wearable I/O · gesture · crop"]
-        LgM["<b>Mobile base</b><br/>Voice assistant"]
-        LgGG["<b>GG-Glasses-Core</b><br/>Cloud session · auth"]
-        LgOEM["<b>OEM SDK</b><br/>gRPC transport"]
-        LgS["<b>SS-Glasses-Core</b><br/>EventPolicy · EventOrchestrator · OEM"]
-        LgC["<b>Cloud VLM / LLM</b><br/>Multimodal answers"]
+        subgraph GCol[" "]
+            direction TB
+            User([User])
+            TwoHand["<b>Two-handed close gesture</b><br/>1–2 s visibility"]
+            subgraph Glasses["<b><span style='font-size:22px'>Glasses</span></b>"]
+                direction TB
+                Cam["<b>Camera</b><br/>1 FPS frame buffer<br/>Best frame on gesture"]
+                GestCrop["<b>Gesture + crop</b><br/>Detect · crop lock"]
+                Mic["<b>Mic & display</b>"]
+            end
+        end
+
+        subgraph Mobile["<b><span style='font-size:22px'>Mobile phone</span></b>"]
+            direction TB
+            VA["<b>Voice assistant</b><br/>Optional voice · hotword · follow-up · TTS · UI"]
+            subgraph SSGC["<b><span style='font-size:18px'>SS-Glasses-Core</span></b>"]
+                direction TB
+                PolicyVQ["<b>EventPolicy:VisualQA</b><br/>Gesture gates · stability · negatives"]
+                OrchVQ["<b>EventOrchestrator:VisualQA</b><br/>Crop"]
+                OEM["<b>OEM SDK</b><br/>gRPC · glasses transport"]
+            end
+            GGGC["<b>GG-Glasses-Core</b><br/>Cloud session · auth · multimodal client"]
+        end
+
+        CloudVLM["<b>Cloud VLM / LLM</b><br/>Multimodal Q&A"]
     end
+
+    subgraph BottomDeck[" "]
+        direction RL
+        subgraph LegendRow["Legend"]
+            direction LR
+            LgG("<b>Glasses</b>")
+            LgM("<b>Voice</b>")
+            LgGG("<b>GG-Core</b>")
+            LgOEM("<b>OEM</b>")
+            LgS("<b>SS-Core</b>")
+            LgC("<b>Cloud</b>")
+            LgG --- LgM --- LgGG --- LgOEM --- LgS --- LgC
+        end
+    end
+
+    MainRow ~~~ BottomDeck
 
     User --> TwoHand
     TwoHand --> GestCrop
@@ -77,7 +85,6 @@ flowchart LR
     classDef legendOEM fill:#ede7f6,stroke:#7e57c2,color:#111
     classDef legendSS fill:#ede7f6,stroke:#7e57c2,color:#111
     classDef legendCloud fill:#d1c4e9,stroke:#512da8,color:#111
-    classDef legendFrame fill:#fafafa,stroke:#9e9e9e,color:#111
     classDef colHidden fill:none,stroke:none,color:#111
     classDef userGesture fill:#e3f2fd,stroke:#1565c0,color:#111,stroke-width:2px
 
@@ -85,6 +92,8 @@ flowchart LR
     style GCol fill:none,stroke:none
     style Glasses stroke:#0d47a1,stroke-width:2px
     style Mobile stroke:#e65100,stroke-width:2px
+    style MainRow fill:none,stroke:none
+    style LegendRow fill:#fafafa,stroke:#bdbdbd,color:#111,stroke-width:1px
 
     class TwoHand userGesture
     class Cam,Mic,GestCrop glasses
@@ -94,11 +103,10 @@ flowchart LR
     class PolicyVQ,OrchVQ ssCoreLight
     class CloudVLM cloudVlm
     class GCol colHidden
-    class Legend legendFrame
+
     class LgG legendGlasses
     class LgM legendMobile
     class LgGG legendGG
     class LgOEM legendOEM
     class LgS legendSS
-    class LgC legendCloud
-```
+    class LgC legendCloud```
