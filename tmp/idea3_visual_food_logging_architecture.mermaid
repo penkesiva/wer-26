@@ -1,46 +1,55 @@
 %% Idea 3 — Visual Food Logging · mermaid.live
-%% LR columns: Glasses | Mobile (voice assistant inside) — Mic↔VA across column boundary
+%% TB: Glasses | Mobile | Nutrition API on top, compact legend bottom
 %% Smart-triggered: Ambient Scene Understanding at Low-FPS → policy → capture → VLM + Nutrition API → save
 %% <b>…</b> = bold title inside a box
-%%{init: {'flowchart': {'htmlLabels': true}}}%%
+%%{init: {'flowchart': {'htmlLabels': true, 'padding': 6, 'nodeSpacing': 20, 'rankSpacing': 28}}}%%
 
-flowchart LR
-    subgraph GCol[" "]
-        direction TB
-        User([User])
-        subgraph Glasses["<b><span style='font-size:22px'>Glasses</span></b>"]
-            direction TB
-            Cam["<b>Camera</b><br/>Policy-shaped meal capture"]
-            SceneDet["<b>Ambient Scene Understanding</b><br/>at Low-FPS<br/>Plates · utensils · café env"]
-            Mic["<b>Mic & display</b>"]
-        end
-    end
-
-    subgraph Mobile["<b><span style='font-size:22px'>Mobile phone</span></b>"]
-        direction TB
-        VA["<b>Voice assistant</b><br/>Hotword · meal recall · corrections"]
-        Clk["<b>Clock</b><br/>Time-of-day · meal windows"]
-        subgraph SSGC["<b><span style='font-size:18px'>SS-Glasses-Core</span></b>"]
-            direction TB
-            PolicyMeal["<b>EventPolicy:Meal</b><br/>Gates · meal windows · negatives"]
-            OrchMeal["<b>EventOrchestrator:Meal</b><br/>Audio/UI cue · capture · VLM · nutrition · save"]
-        end
-        VLM["<b>On-device VLM</b><br/>Scene + OCR when needed"]
-        AMEM[("<b>Ambient-Memory</b><br/>Meal entries: photo · meal time · items · macros")]
-    end
-
-    NutAPI["<b>3rd-party Nutrition API</b><br/>Cuisine · calories · macros"]
-
-    subgraph Legend["Legend"]
+flowchart TB
+    subgraph MainRow[" "]
         direction LR
-        LgG["<b>Glasses</b><br/>Wearable I/O"]
-        LgM["<b>Mobile base</b><br/>Voice assistant"]
-        LgClk["<b>Clock</b><br/>Time-of-day · meal windows"]
-        LgL["<b>On-device VLM</b><br/>Vision on phone"]
-        LgA["<b>Ambient-Memory</b><br/>Stored meal entries"]
-        LgS["<b>SS-Glasses-Core</b><br/>EventPolicy · EventOrchestrator"]
-        LgN["<b>Nutrition API</b><br/>Cloud · cuisine · calories"]
+        subgraph GCol[" "]
+            direction TB
+            User([User])
+            subgraph Glasses["<b><span style='font-size:22px'>Glasses</span></b>"]
+                direction TB
+                Cam["<b>Camera</b><br/>Policy-shaped meal capture"]
+                SceneDet["<b>Ambient Scene Understanding</b><br/>at Low-FPS<br/>Plates · utensils · café env"]
+                Mic["<b>Mic & display</b>"]
+            end
+        end
+
+        subgraph Mobile["<b><span style='font-size:22px'>Mobile phone</span></b>"]
+            direction TB
+            VA["<b>Voice assistant</b><br/>Hotword · meal recall · corrections"]
+            Clk["<b>Clock</b><br/>Time-of-day · meal windows"]
+            subgraph SSGC["<b><span style='font-size:18px'>SS-Glasses-Core</span></b>"]
+                direction TB
+                PolicyMeal["<b>EventPolicy:Meal</b><br/>Gates · meal windows · negatives"]
+                OrchMeal["<b>EventOrchestrator:Meal</b><br/>Audio/UI cue · capture · VLM · nutrition · save"]
+            end
+            VLM["<b>On-device VLM</b><br/>Scene + OCR when needed"]
+            AMEM[("<b>Ambient-Memory</b><br/>Meal entries: photo · meal time · items · macros")]
+        end
+
+        NutAPI["<b>3rd-party Nutrition API</b><br/>Cuisine · calories · macros"]
     end
+
+    subgraph BottomDeck[" "]
+        direction RL
+        subgraph LegendRow["Legend"]
+            direction LR
+            LgG("<b>Glasses</b>")
+            LgM("<b>Voice</b>")
+            LgClk("<b>Clock</b>")
+            LgL("<b>VLM</b>")
+            LgA("<b>Ambient</b>")
+            LgS("<b>SS-Core</b>")
+            LgN("<b>Nut-API</b>")
+            LgG --- LgM --- LgClk --- LgL --- LgA --- LgS --- LgN
+        end
+    end
+
+    MainRow ~~~ BottomDeck
 
     Cam -->|"frames"| SceneDet
     SceneDet -->|"① scene understanding"| OrchMeal
@@ -76,13 +85,15 @@ flowchart LR
     classDef legendAmbient fill:#ffccbc,stroke:#d84315,color:#111
     classDef legendSS fill:#ede7f6,stroke:#7e57c2,color:#111
     classDef legendNutrition fill:#f8bbd0,stroke:#ad1457,color:#111
-    classDef legendFrame fill:#fafafa,stroke:#9e9e9e,color:#111
     classDef colHidden fill:none,stroke:none,color:#111
 
     style SSGC fill:#ede7f6,stroke:#7e57c2,stroke-width:2px
     style GCol fill:none,stroke:none
     style Glasses stroke:#0d47a1,stroke-width:2px
     style Mobile stroke:#e65100,stroke-width:2px
+    style MainRow fill:none,stroke:none
+    style LegendRow fill:#fafafa,stroke:#bdbdbd,color:#111,stroke-width:1px
+    style BottomDeck fill:none,stroke:none
 
     class Cam,Mic,SceneDet glasses
     class Clk clock
@@ -92,7 +103,7 @@ flowchart LR
     class PolicyMeal,OrchMeal ssCoreLight
     class NutAPI nutritionCloud
     class GCol colHidden
-    class Legend legendFrame
+
     class LgG legendGlasses
     class LgM legendMobile
     class LgClk legendClock
