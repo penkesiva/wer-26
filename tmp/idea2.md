@@ -30,9 +30,20 @@
 
 ---
 
+## How numbering shows on the diagram
+
+| Style | Where it appears | Used in |
+| --- | --- | --- |
+| **`autonumber`** | Small **1, 2, 3…** on each message arrow (rendered by Mermaid) | Flow A and Flow B sequence charts below |
+| **Labels in flowcharts** | **① ② ③** inside boxes or on arrow labels (you write them) | End-to-end picture; architecture park path |
+
+---
+
 ## Flow A: Automatic “mark parking spot” (end of drive)
 
 Triggered when the phone infers the user has parked (motion/GPS context). No OEM vehicle SDK; inference is from on-device sensors plus policy.
+
+**Sequence chart:** steps are numbered **on the arrows** via `autonumber` (open preview to see 1, 2, 3… on the graphic).
 
 ```mermaid
 sequenceDiagram
@@ -88,6 +99,8 @@ sequenceDiagram
 
 User-initiated (or nudged) lookup. Sensor data does **not** go directly to the voice assistant; recall uses **Ambient-Memory** written during Flow A.
 
+**Sequence chart:** same `autonumber` on arrows (1 through 5 for the main path).
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -116,21 +129,23 @@ sequenceDiagram
 
 ## End-to-end picture
 
+**Flowchart:** numbers are **inside each box** (manual labels). Arrows are not auto-numbered.
+
 ```mermaid
 flowchart LR
     subgraph Park["Flow A: Mark (automatic)"]
         direction TB
-        A1[Sensors] --> A2[Orchestrator + Policy]
-        A2 --> A3[Audio/UI cue + capture]
-        A3 --> A4[VLM]
-        A4 --> A5[(Ambient-Memory)]
+        A1["① Sensors"] --> A2["② Orchestrator + Policy"]
+        A2 --> A3["③ Audio/UI cue + capture"]
+        A3 --> A4["④ VLM"]
+        A4 --> A5["⑤ Ambient-Memory"]
     end
 
     subgraph Recall["Flow B: Recall (user)"]
         direction TB
-        B1[User speech] --> B2[Voice assistant]
-        B2 --> B5[(Ambient-Memory)]
-        B5 --> B3[TTS · UI on glasses]
+        B1["① User speech"] --> B2["② Voice assistant"]
+        B2 --> B5["③ Ambient-Memory"]
+        B5 --> B3["④ TTS · UI on glasses"]
     end
 
     A5 -.->|smart fetch| B5

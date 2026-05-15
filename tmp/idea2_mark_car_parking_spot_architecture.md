@@ -41,16 +41,16 @@ flowchart LR
         LgS["<b>SS-Glasses-Core</b><br/>EventPolicy · EventOrchestrator"]
     end
 
-    Sens --> OrchCP
-    OrchCP <-->|policy| PolicyCP
+    Sens -->|"① context"| OrchCP
+    OrchCP <-->|"② policy"| PolicyCP
 
-    Cam -->|"frames"| OrchCP
-    OrchCP -->|"capture control"| Cam
-    OrchCP -->|"audio/UI cue (TTS + display)"| Mic
+    OrchCP -->|"③ audio/UI cue"| Mic
+    OrchCP -->|"④ capture control"| Cam
+    Cam -->|"⑤ frames"| OrchCP
 
-    OrchCP --> VLM
-    VLM --> OrchCP
-    OrchCP --> AMEM
+    OrchCP -->|"⑥ analyze"| VLM
+    VLM -->|"⑦ text"| OrchCP
+    OrchCP -->|"⑧ save"| AMEM
 
     User --> Mic
     Mic -->|speech| VA
