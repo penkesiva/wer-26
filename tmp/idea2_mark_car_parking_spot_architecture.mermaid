@@ -2,17 +2,17 @@
 config:
   flowchart:
     htmlLabels: true
-    padding: 10
-    nodeSpacing: 30
-    rankSpacing: 50
+    padding: 6
+    nodeSpacing: 18
+    rankSpacing: 30
 ---
 flowchart LR
- subgraph SSGC["<b><span style=font-size:18px>SS-Glasses-Core</span></b>"]
+ subgraph SSGC["<b><span style=font-size:14px>SS-Glasses-Core</span></b>"]
     direction TB
         PolicyCP["<b>EventPolicy:Park</b><br>Gates · timing · negatives"]
-        OrchCP["<b>EventOrchestrator:Park</b><br>Audio/UI cue · capture · on-device VLM · save"]
+        OrchCP["<b>EventOrchestrator:Park</b><br>Audio/UI · capture · VLM · save"]
   end
- subgraph Mobile["<b><span style=font-size:22px>Mobile phone</span></b>"]
+ subgraph Mobile["<b><span style=font-size:16px>Mobile phone</span></b>"]
     direction TB
         VA["<b>Voice assistant</b><br>Hotword · GPS nudge · recall"]
         Sens["<b>Sensors</b><br>Motion · GPS"]
@@ -20,10 +20,10 @@ flowchart LR
         VLM["<b>On-device VLM</b><br>Scene + OCR"]
         AMEM[("<b>Ambient-Memory</b><br>Frames + text")]
   end
- subgraph Glasses["<b><span style=font-size:22px>Glasses</span></b>"]
-    direction LR
-        Cam["<b>Camera</b><br>Policy-shaped<br>capture"]
-        Mic["<b>Mic &amp; display</b>"]
+ subgraph Glasses["<b><span style=font-size:16px>Glasses</span></b>"]
+    direction TB
+        Cam["<b>Camera</b>"]
+        Mic["<b>Mic</b>"]
   end
  subgraph GCol[" "]
     direction TB
@@ -92,7 +92,7 @@ flowchart LR
     classDef legendSS fill:#ede7f6,stroke:#7e57c2,color:#111
     classDef colHidden fill:none,stroke:none,color:#111
     style SSGC fill:#ede7f6,stroke:#7e57c2,stroke-width:2px
-    style Glasses stroke:#0d47a1,stroke-width:3px,padding:20px
+    style Glasses stroke:#0d47a1,stroke-width:2px
     style LegendRow fill:#fafafa,stroke:#bdbdbd,color:#111,stroke-width:1px
     style Mobile stroke:#e65100,stroke-width:2px
     style GCol fill:none,stroke:none
