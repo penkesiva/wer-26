@@ -33,7 +33,7 @@
 | Component | Role |
 | --- | --- |
 | **Glasses: Camera** | **1 FPS** rolling buffer; on gesture, pick **sharpest frame** with hands stable in frame. |
-| **Glasses: Gesture + crop** | Lightweight on-glasses pipeline: **two-handed close** (~300–500 ms stability), **crop lock**, optional edge snap. No phone-side VLM. |
+| **Glasses: Gesture + crop** | Lightweight on-glasses pipeline: **two-handed close** (**1–2 s visibility**), **crop lock**, optional edge snap. No phone-side VLM. |
 | **Glasses: Mic & display** | Optional utterance with gesture; show/TTS results. |
 | **EventPolicy:VisualQA** | **Gesture gates**, stability window, **negatives** (incidental hand motion, walking, etc.). |
 | **EventOrchestrator:VisualQA** | Policy check, **bundle** crop + optional transcript, **hand off to OEM SDK**, hold **in-session** state, route answer to voice assistant. |
@@ -102,7 +102,7 @@ sequenceDiagram
 
 ### Step-by-step
 
-1. **Buffer and gesture**: Camera maintains **1 FPS** frames. User performs **two-handed close**; glasses lock crop and pick the best buffered frame.
+1. **Buffer and gesture**: Camera maintains **1 FPS** frames. User performs **two-handed close** (**1–2 s visibility**); glasses lock crop and pick the best buffered frame.
 2. **Optional voice**: User may stay silent or speak with the gesture. **Voice assistant** supplies transcript and whether a **hotword / cloud intent** was detected.
 3. **Policy**: **EventPolicy:VisualQA** allows or **vetoes** (unstable gesture, incidental motion).
 4. **Cloud handoff**: **EventOrchestrator:VisualQA** → **OEM SDK** → **GG-Glasses-Core** → **cloud VLM/LLM** (crop only, or crop + question). Answer returns **cloud → GG-Glasses-Core → OEM SDK**.

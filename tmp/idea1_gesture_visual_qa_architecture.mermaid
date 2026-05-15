@@ -8,7 +8,7 @@ flowchart LR
     subgraph GCol[" "]
         direction TB
         User([User])
-        TwoHand["<b>Two-handed close gesture</b><br/>~300–500 ms stability"]
+        TwoHand["<b>Two-handed close gesture</b><br/>1–2 s visibility"]
         subgraph Glasses["<b><span style='font-size:22px'>Glasses</span></b>"]
             direction TB
             Cam["<b>Camera</b><br/>1 FPS frame buffer<br/>Best frame on gesture"]
@@ -23,7 +23,7 @@ flowchart LR
         subgraph SSGC["<b><span style='font-size:18px'>SS-Glasses-Core</span></b>"]
             direction TB
             PolicyVQ["<b>EventPolicy:VisualQA</b><br/>Gesture gates · stability · negatives"]
-            OrchVQ["<b>EventOrchestrator:VisualQA</b><br/>Bundle crop + voice · cloud handoff"]
+            OrchVQ["<b>EventOrchestrator:VisualQA</b><br/>Crop"]
             OEM["<b>OEM SDK</b><br/>gRPC · glasses transport"]
         end
         GGGC["<b>GG-Glasses-Core</b><br/>Cloud session · auth · multimodal client"]
