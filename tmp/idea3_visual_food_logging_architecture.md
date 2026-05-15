@@ -3,7 +3,7 @@
 ```mermaid
 %% Idea 3 — Visual Food Logging · mermaid.live
 %% LR columns: Glasses | Mobile (voice assistant inside) — Mic↔VA across column boundary
-%% Smart-triggered: low-FPS ambient food watch → meal scene → policy → capture → VLM + Nutrition API → save
+%% Smart-triggered: Ambient Scene Understanding at Low-FPS → policy → capture → VLM + Nutrition API → save
 %% <b>…</b> = bold title inside a box
 %%{init: {'flowchart': {'htmlLabels': true}}}%%
 
@@ -13,8 +13,8 @@ flowchart LR
         User([User])
         subgraph Glasses["<b><span style='font-size:22px'>Glasses</span></b>"]
             direction TB
-            Cam["<b>Camera</b><br/>Low-FPS ambient food watch<br/>Policy-shaped meal capture"]
-            SceneDet["<b>Meal-scene detector</b><br/>Plates · utensils · café env"]
+            Cam["<b>Camera</b><br/>Policy-shaped meal capture"]
+            SceneDet["<b>Ambient Scene Understanding</b><br/>at Low-FPS<br/>Plates · utensils · café env"]
             Mic["<b>Mic & display</b>"]
         end
     end
@@ -46,7 +46,7 @@ flowchart LR
     end
 
     Cam -->|"frames"| SceneDet
-    SceneDet -->|"① meal scene"| OrchMeal
+    SceneDet -->|"① scene understanding"| OrchMeal
     Clk -->|"② time context"| OrchMeal
     OrchMeal <-->|"③ policy"| PolicyMeal
 

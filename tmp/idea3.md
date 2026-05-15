@@ -1,6 +1,6 @@
 # Idea 3: Visual Food Logging
 
-**Goal:** Log what the user eats during the day without manual entry. Glasses keep a **low-FPS ambient watch** for meal-like scenes (plates, utensils, café environment), combined with **time-of-day** and **EventPolicy:Meal** to suppress false positives. On a confident meal event, the system **auto-captures** a meal photo, enriches it with **on-device VLM** when needed, calls a **3rd-party Nutrition API** for cuisine and calories, and stores a **meal entry** (including **meal time**) in Ambient-Memory. The user can ask the **on-device voice assistant** for summaries and corrections.
+**Goal:** Log what the user eats during the day without manual entry. Glasses run **Ambient Scene Understanding at Low-FPS** for meal-like scenes (plates, utensils, café environment), combined with **time-of-day** and **EventPolicy:Meal** to suppress false positives. On a confident meal event, the system **auto-captures** a meal photo, enriches it with **on-device VLM** when needed, calls a **3rd-party Nutrition API** for cuisine and calories, and stores a **meal entry** (including **meal time**) in Ambient-Memory. The user can ask the **on-device voice assistant** for summaries and corrections.
 
 **Architecture diagram:** [idea3_visual_food_logging_architecture.md](./idea3_visual_food_logging_architecture.md) (rendered Mermaid) · source: [idea3_visual_food_logging_architecture.mermaid](./idea3_visual_food_logging_architecture.mermaid)
 
@@ -19,8 +19,8 @@
 
 | Component | Role |
 | --- | --- |
-| **Glasses: Camera** | **Always-on low-FPS** ambient stream for meal-scene detection; **policy-shaped** higher-quality capture when orchestrator fires a meal log. |
-| **Glasses: Meal-scene detector** | On-glasses vision: **plates, utensils, café / dining environment**. Uses **time-of-day priors** (breakfast, lunch, dinner windows). Does **not** use hand-to-mouth tracking. |
+| **Glasses: Camera** | Supplies frames; **policy-shaped** higher-quality meal capture when orchestrator fires a log. |
+| **Glasses: Ambient Scene Understanding** | On-glasses vision **at Low-FPS**: **plates, utensils, café / dining environment**. Uses **time-of-day priors** (breakfast, lunch, dinner windows). Does **not** use hand-to-mouth tracking. |
 | **Glasses: Mic & display** | User I/O: speech in; audio cues (TTS) and optional display UI out. |
 | **Mobile: Clock** | Phone time-of-day and configurable **meal windows**; feeds **EventOrchestrator:Meal** and **EventPolicy:Meal** (not the voice assistant). |
 | **EventPolicy:Meal** | Gates, meal-window timing, and **negative rules** to veto false positives (TV food, grocery aisles, walking past a bakery, etc.). |
@@ -43,13 +43,13 @@
 
 ## Flow A: Automatic meal log (smart-triggered)
 
-The camera runs a **continuous low-FPS food watch**. When the meal-scene detector and clock context look like a real meal, **EventPolicy:Meal** decides allow / defer / extend / veto. On allow, the orchestrator captures, analyzes, calls the Nutrition API, and saves with **meal time**.
+**Ambient Scene Understanding at Low-FPS** runs continuously on glasses. When scene understanding and clock context look like a real meal, **EventPolicy:Meal** decides allow / defer / extend / veto. On allow, the orchestrator captures, analyzes, calls the Nutrition API, and saves with **meal time**.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Cam as Camera (low FPS)
-    participant SD as Meal-scene detector
+    participant Cam as Camera
+    participant ASU as Ambient Scene Understanding
     participant Clk as Clock (meal windows)
     participant P as EventPolicy:Meal
     participant O as EventOrchestrator:Meal
@@ -58,14 +58,14 @@ sequenceDiagram
     participant N as 3rd-party Nutrition API
     participant A as Ambient-Memory
 
-    Cam->>SD: Ambient frames
-    SD->>O: Meal scene (plates · utensils · café)
+    Cam->>ASU: Frames at Low-FPS
+    ASU->>O: Meal scene (plates · utensils · café)
     Clk->>O: Time-of-day context
     O->>P: Consult gates · windows · negatives
     P-->>O: allow · defer · extend · veto
 
     alt veto or defer
-        O-->>SD: Wait / re-check
+        O-->>ASU: Wait / re-check
     else allow (or extend window)
         O->>M: Audio/UI cue (brief TTS + optional display)
         O->>Cam: Capture control (meal still)
@@ -80,7 +80,7 @@ sequenceDiagram
 
 ### Step-by-step
 
-1. **Ambient watch**: Camera streams **low-FPS** frames to the **meal-scene detector** (plates, utensils, café environment). **No hand-to-mouth** signal.
+1. **Ambient Scene Understanding at Low-FPS**: Camera supplies frames; on-glasses understanding detects meal-like scenes (plates, utensils, café environment). **No hand-to-mouth** signal.
 2. **Time context**: **Clock** supplies time-of-day and breakfast / lunch / dinner windows to the orchestrator and policy.
 3. **Policy check**: **EventPolicy:Meal** returns allow, defer, extend, or veto to reduce false positives.
 4. **Audio/UI cue**: On allow, short **TTS** (and optional display line) so the user knows a meal was logged. Skippable if policy allows silent capture.
@@ -101,7 +101,7 @@ sequenceDiagram
 
 ## Flow B: Recall and corrections (user)
 
-User-initiated queries and fixes. **Clock and meal-scene detector do not** talk to the voice assistant directly.
+User-initiated queries and fixes. **Clock and Ambient Scene Understanding do not** talk to the voice assistant directly.
 
 ```mermaid
 sequenceDiagram
@@ -141,7 +141,7 @@ sequenceDiagram
 flowchart LR
     subgraph Mark["Flow A: Auto meal log"]
         direction TB
-        A1["① Ambient watch + scene"] --> A2["② Clock + policy"]
+        A1["① Ambient Scene Understanding at Low-FPS"] --> A2["② Clock + policy"]
         A2 --> A3["③ Cue + capture"]
         A3 --> A4["④ VLM · Nutrition API"]
         A4 --> A5["⑤ Ambient-Memory"]
@@ -161,7 +161,7 @@ flowchart LR
 
 ## Design notes
 
-- **Smart-triggered, not user-tapped**: Low-FPS camera is always watching for **meal-like scenes**; logging fires only when policy allows.
+- **Smart-triggered, not user-tapped**: **Ambient Scene Understanding at Low-FPS** runs continuously for **meal-like scenes**; logging fires only when policy allows.
 - **Detection signals**: Plates, utensils, café/dining context, and **time-of-day**; explicitly **not** hand-to-mouth.
 - **Policy is required**: Negatives and meal windows are how the product stays trustworthy (no log every food-shaped pixel).
 - **Two analysis paths**: **On-device VLM** for local text/context; **Nutrition API** for cuisine and calories (specialist cloud, not a general LLM).
