@@ -2,35 +2,31 @@
 
 ```mermaid
 %% Idea 2 — Mark Car Parking Spot · mermaid.live
-%% TB: Glasses | Mobile on top, compact legend row below (tighter padding via init)
+%% flowchart LR: Mobile (left) | Glasses (right) | Legend (bottom)
 %% <b>…</b> = bold title inside a box
-%% Glasses / Mobile phone labels: centered (native subgraph title), big + bold via HTML
-%%{init: {'flowchart': {'htmlLabels': true, 'padding': 6, 'nodeSpacing': 20, 'rankSpacing': 28}}}%%
+%%{init: {'flowchart': {'htmlLabels': true, 'padding': 10, 'nodeSpacing': 30, 'rankSpacing': 50}}}%%
 
-flowchart TB
-    subgraph MainRow[" "]
-        direction LR
-        subgraph GCol[" "]
+flowchart LR
+    subgraph Mobile["<b><span style='font-size:22px'>Mobile phone</span></b>"]
+        direction TB
+        VA["<b>Voice assistant</b><br/>Hotword · GPS nudge · recall"]
+        Sens["<b>Sensors</b><br/>Motion · GPS"]
+        subgraph SSGC["<b><span style='font-size:18px'>SS-Glasses-Core</span></b>"]
             direction TB
-            User([User])
-            subgraph Glasses["<b><span style='font-size:22px'>Glasses</span></b>"]
-                direction TB
-                Cam["<b>Camera</b><br/>Policy-shaped capture"]
-                Mic["<b>Mic & display</b>"]
-            end
+            PolicyCP["<b>EventPolicy:Park</b><br/>Gates · timing · negatives"]
+            OrchCP["<b>EventOrchestrator:Park</b><br/>Audio/UI cue · capture · on-device VLM · save"]
         end
+        VLM["<b>On-device VLM</b><br/>Scene + OCR"]
+        AMEM[("<b>Ambient-Memory</b><br/>Frames + text")]
+    end
 
-        subgraph Mobile["<b><span style='font-size:22px'>Mobile phone</span></b>"]
-            direction TB
-            VA["<b>Voice assistant</b><br/>Hotword · GPS nudge · recall"]
-            Sens["<b>Sensors</b><br/>Motion · GPS"]
-            subgraph SSGC["<b><span style='font-size:18px'>SS-Glasses-Core</span></b>"]
-                direction TB
-                PolicyCP["<b>EventPolicy:Park</b><br/>Gates · timing · negatives"]
-                OrchCP["<b>EventOrchestrator:Park</b><br/>Audio/UI cue · capture · on-device VLM · save"]
-            end
-            VLM["<b>On-device VLM</b><br/>Scene + OCR"]
-            AMEM[("<b>Ambient-Memory</b><br/>Frames + text")]
+    subgraph GCol[" "]
+        direction TB
+        User([User])
+        subgraph Glasses["<b><span style='font-size:22px'>Glasses</span></b>"]
+            direction LR
+            Cam["<b>Camera</b><br/>Policy-shaped<br/>capture"]
+            Mic["<b>Mic &amp; display</b>"]
         end
     end
 
@@ -48,21 +44,20 @@ flowchart TB
         end
     end
 
-    MainRow ~~~ BottomDeck
+    Mobile ~~~ GCol
+    GCol ~~~ BottomDeck
 
     Sens -->|"① context"| OrchCP
     OrchCP <-->|"② policy"| PolicyCP
-
     OrchCP -->|"③ audio/UI cue"| Mic
     OrchCP -->|"④ capture control"| Cam
     Cam -->|"⑤ frames"| OrchCP
-
     OrchCP -->|"⑥ analyze"| VLM
     VLM -->|"⑦ text"| OrchCP
     OrchCP -->|"⑧ save"| AMEM
 
     User --> Mic
-    Mic -->|speech| VA
+    Mic -.->|speech| VA
     VA -->|TTS · UI| Mic
     VA <-->|smart fetch| AMEM
 
@@ -82,11 +77,10 @@ flowchart TB
 
     style SSGC fill:#ede7f6,stroke:#7e57c2,stroke-width:2px
     style GCol fill:none,stroke:none
-    style Glasses stroke:#0d47a1,stroke-width:2px
+    style Glasses stroke:#0d47a1,stroke-width:3px,padding:20px
     style Mobile stroke:#e65100,stroke-width:2px
-    style MainRow fill:none,stroke:none
-    style LegendRow fill:#fafafa,stroke:#bdbdbd,color:#111,stroke-width:1px
     style BottomDeck fill:none,stroke:none
+    style LegendRow fill:#fafafa,stroke:#bdbdbd,color:#111,stroke-width:1px
 
     class Cam,Mic glasses
     class Sens sensors
