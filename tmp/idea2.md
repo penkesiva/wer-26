@@ -12,11 +12,11 @@ flowchart TB
         subgraph GCol[" "]
             direction TB
             User([User])
-            Spacer1[" "]
+            ParkAction["<b>Park & walk away</b><br/>GPS · motion change"]
             subgraph Glasses["<b><span style='font-size:20px'>Glasses</span></b>"]
                 direction TB
                 Cam["<b>Camera</b>"]
-                Spacer2[" "]
+                Display["<b>Display</b><br/>Confirmation glance"]
                 Mic["<b>Mic</b>"]
             end
         end
@@ -51,9 +51,12 @@ flowchart TB
 
     MainRow ~~~ BottomDeck
 
+    User --> ParkAction
+    ParkAction --> Sens
     Sens -->|"① context"| OrchCP
     OrchCP <-->|"② policy"| PolicyCP
-    OrchCP -->|"③ audio/UI cue"| Mic
+    OrchCP -->|"③ audio cue"| Mic
+    OrchCP -->|"③ UI cue"| Display
     OrchCP -->|"④ capture control"| Cam
     Cam -->|"⑤ frames"| OrchCP
     OrchCP -->|"⑥ analyze"| VLM
@@ -71,6 +74,7 @@ flowchart TB
     classDef onDeviceVlm fill:#d9ead3,stroke:#4e7a3a,color:#111,stroke-width:2px
     classDef ambientMem fill:#f4d4c4,stroke:#a85a35,color:#111,stroke-width:2px
     classDef ssCoreLight fill:#e6def0,stroke:#7e57c2,color:#111,stroke-width:2px
+    classDef userGesture fill:#e1edf5,stroke:#4a7aa3,color:#111,stroke-width:2px
     classDef legendGlasses fill:#cfe4f5,stroke:#3a6fa0,color:#111
     classDef legendMobile fill:#fde8cc,stroke:#b86a2b,color:#111
     classDef legendSensors fill:#fef5c7,stroke:#b8901f,color:#111
@@ -87,13 +91,14 @@ flowchart TB
     style BottomDeck fill:none,stroke:none
     style LegendRow fill:#fafafa,stroke:#bdbdbd,color:#111,stroke-width:1px
 
-    class Cam,Mic glasses
+    class Cam,Mic,Display glasses
+    class ParkAction userGesture
     class VA mobile
     class Sens sensors
     class VLM onDeviceVlm
     class AMEM ambientMem
     class PolicyCP,OrchCP ssCoreLight
-    class GCol,Spacer1,Spacer2 colHidden
+    class GCol colHidden
 
     class LgG legendGlasses
     class LgM legendMobile
