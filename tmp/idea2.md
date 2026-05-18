@@ -16,7 +16,7 @@ flowchart TB
             subgraph SSGC["<b><span style='font-size:16px'>SS-Glasses-Core</span></b>"]
                 direction TB
                 PolicyCP["<b>EventPolicy:Park</b><br/>Gates · timing · negatives"]
-                OrchCP["<b>EventOrchestrator:Park</b><br/>Audio/UI · capture · VLM · save"]
+                OrchCP["<b>EventOrchestrator:Park</b><br/>Audio cue · capture · VLM · save"]
             end
             VLM["<b>On-device VLM</b><br/>Scene + OCR"]
             AMEM[("<b>Ambient-Memory</b><br/>Frames + text")]
@@ -29,7 +29,6 @@ flowchart TB
             subgraph Glasses["<b><span style='font-size:20px'>Glasses</span></b>"]
                 direction TB
                 Cam["<b>Camera</b>"]
-                Display["<b>Display</b><br/>Confirmation glance"]
                 Mic["<b>Mic</b>"]
             end
         end
@@ -53,11 +52,9 @@ flowchart TB
 
     User --> ParkAction
     ParkAction --> Sens
-    ParkAction --> Display
     Sens -->|"① context"| OrchCP
     OrchCP <-->|"② policy"| PolicyCP
-    OrchCP -->|"③ audio cue"| Mic
-    OrchCP -->|"③ UI cue"| Display
+    OrchCP -->|"③ audio cue"| Glasses
     OrchCP -->|"④ capture control"| Cam
     Cam -->|"⑤ frames"| OrchCP
     OrchCP -->|"⑥ analyze"| VLM
@@ -92,7 +89,7 @@ flowchart TB
     style BottomDeck fill:none,stroke:none
     style LegendRow fill:#fafafa,stroke:#bdbdbd,color:#111,stroke-width:1px
 
-    class Cam,Mic,Display glasses
+    class Cam,Mic glasses
     class ParkAction userGesture
     class VA mobile
     class Sens sensors

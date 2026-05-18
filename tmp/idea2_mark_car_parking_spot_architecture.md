@@ -13,7 +13,7 @@ flowchart LR
  subgraph SSGC["<b><span style=font-size:14px>SS-Glasses-Core</span></b>"]
     direction TB
         PolicyCP["<b>EventPolicy:Park</b><br>Gates · timing · negatives"]
-        OrchCP["<b>EventOrchestrator:Park</b><br>Audio/UI · capture · VLM · save"]
+        OrchCP["<b>EventOrchestrator:Park</b><br>Audio cue · capture · VLM · save"]
   end
  subgraph Mobile["<b><span style=font-size:16px>Mobile phone</span></b>"]
     direction TB
@@ -55,7 +55,7 @@ flowchart LR
     GCol ~~~ BottomDeck
     Sens -- ① context --> OrchCP
     OrchCP <-- ② policy --> PolicyCP
-    OrchCP -- ③ audio/UI cue --> Mic
+    OrchCP -- ③ audio cue --> Glasses
     OrchCP -- ④ capture control --> Cam
     Cam -- ⑤ frames --> OrchCP
     OrchCP -- ⑥ analyze --> VLM
