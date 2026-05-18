@@ -2,13 +2,13 @@
 
 ```mermaid
 %% Idea 2 — Mark Car Parking Spot · mermaid.live
-%% Layout: User + Glasses (left) → Mobile (right)
+%% Layout: Mobile (top) | Glasses (bottom) | Legend
 %% <b>…</b> = bold title inside a box
 %%{init: {'flowchart': {'htmlLabels': true, 'padding': 6, 'nodeSpacing': 20, 'rankSpacing': 28}}}%%
 
 flowchart TB
     subgraph MainRow[" "]
-        direction LR
+        direction TB
         subgraph Mobile["<b><span style='font-size:20px'>Mobile phone</span></b>"]
             direction TB
             VA["<b>Voice assistant</b><br/>Hotword · GPS nudge · recall"]
@@ -56,7 +56,7 @@ flowchart TB
     OrchCP <-->|"② policy"| PolicyCP
     OrchCP -->|"③ audio cue"| Glasses
     OrchCP -->|"④ capture control"| Cam
-    Cam -->|"⑤ frames"| OrchCP
+    Cam -.->|"⑤ frames"| OrchCP
     OrchCP -->|"⑥ analyze"| VLM
     VLM -->|"⑦ text"| OrchCP
     OrchCP -->|"⑧ save"| AMEM
