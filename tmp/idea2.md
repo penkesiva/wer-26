@@ -1,172 +1,104 @@
-# Idea 2: Mark Car Parking Spot
-
-**Goal:** When the user finishes driving and parks, the system automatically captures a useful visual memory of the spot and makes it easy to recall later (“Where did I park?”). Without relying on cloud vision by default.
-
-**Architecture diagram:** [idea2_mark_car_parking_spot_architecture.md](./idea2_mark_car_parking_spot_architecture.md) (rendered Mermaid) · source: [idea2_mark_car_parking_spot_architecture.mermaid](./idea2_mark_car_parking_spot_architecture.mermaid)
-
----
-
-## Terminology: “cue”
-
-| Term | Meaning |
-| --- | --- |
-| **Audio/UI cue** | User-facing feedback when a park save runs: **spoken TTS** through glasses speakers, plus an **optional short message or icon on the display**. Not a separate alert sound unless product adds one. |
-| **Retrieval cue (text)** | **Text** from the VLM (caption + OCR) stored with the parking marker to help search and recall later. Not audio. |
-
----
-
-## Components (who does what)
-
-| Component | Role |
-| --- | --- |
-| **Glasses: Camera** | Policy-shaped capture: sends image frames to the phone when the orchestrator allows it. |
-| **Glasses: Mic & display** | User I/O: speech in; audio cues (TTS) and optional display UI out. |
-| **Mobile: Sensors** | Motion activity and GPS on the phone; feeds **EventOrchestrator:Park** only (not the voice assistant). |
-| **EventPolicy:Park** | Gates, timing, and negative rules: allow, defer, extend, or veto a park capture. |
-| **EventOrchestrator:Park** | Runs the park path: consult policy, play an **audio/UI cue** to the user, control capture, call on-device VLM, write to memory. |
-| **On-device VLM** | Scene understanding + OCR on the phone; returns **text retrieval cues** (caption + OCR JSON) to the orchestrator. |
-| **Ambient-Memory** | Stores frames + text (thumbnail, caption/OCR, timestamp, GPS when available) for later retrieval. |
-| **Voice assistant** | Hotword, optional GPS nudge, and **recall**: smart-fetch from Ambient-Memory and speak/show results on glasses. |
-
----
-
-## How numbering shows on the diagram
-
-| Style | Where it appears | Used in |
-| --- | --- | --- |
-| **`autonumber`** | Small **1, 2, 3…** on each message arrow (rendered by Mermaid) | Flow A and Flow B sequence charts below |
-| **Labels in flowcharts** | **① ② ③** inside boxes or on arrow labels (you write them) | End-to-end picture; architecture park path |
-
----
-
-## Flow A: Automatic “mark parking spot” (end of drive)
-
-Triggered when the phone infers the user has parked (motion/GPS context). No OEM vehicle SDK; inference is from on-device sensors plus policy.
-
-**Sequence chart:** steps are numbered **on the arrows** via `autonumber` (open preview to see 1, 2, 3… on the graphic).
+# Idea 2 — Mark Car Parking Spot
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    participant S as Sensors (motion · GPS)
-    participant P as EventPolicy:Park
-    participant O as EventOrchestrator:Park
-    participant C as Glasses camera
-    participant M as Glasses mic/display
-    participant V as On-device VLM
-    participant A as Ambient-Memory
+%% Idea 2 — Mark Car Parking Spot · mermaid.live
+%% Layout: User + Glasses (left) → Mobile (right)
+%% <b>…</b> = bold title inside a box
+%%{init: {'flowchart': {'htmlLabels': true, 'padding': 6, 'nodeSpacing': 20, 'rankSpacing': 28}}}%%
 
-    S->>O: Activity + speed/position context
-    O->>P: Consult gates · timing · negatives
-    P-->>O: allow · defer · extend · veto
+flowchart TB
+    subgraph MainRow[" "]
+        direction LR
+        subgraph GCol[" "]
+            direction TB
+            User([User])
+            Spacer1[" "]
+            subgraph Glasses["<b><span style='font-size:20px'>Glasses</span></b>"]
+                direction TB
+                Cam["<b>Camera</b>"]
+                Spacer2[" "]
+                Mic["<b>Mic</b>"]
+            end
+        end
 
-    alt veto or defer
-        O-->>S: Wait / re-check on next sensor tick
-    else allow (or extend window)
-        O->>M: Audio/UI cue: TTS + optional display (e.g. “Saving your parking spot…”)
-        O->>C: Capture control (policy-shaped burst / still)
-        C->>O: Image frame(s)
-        O->>V: Image batch
-        V-->>O: Scene text + OCR JSON
-        O->>A: Write parking marker (frames + text + metadata)
-    end
-```
-
-### Step-by-step
-
-1. **Context arrives**: Motion activity and GPS on the phone stream into **EventOrchestrator:Park** (e.g. vehicle stopped, walking detected, low speed near a plausible park location).
-2. **Policy check**: Orchestrator asks **EventPolicy:Park** for a decision:
-   - **Allow**: proceed with capture now.
-   - **Defer**: not yet; wait for more sensor evidence.
-   - **Extend**: widen the capture window (e.g. user still exiting the car).
-   - **Veto**: do not capture (false park, garage transition, user dismissed, etc.).
-3. **Audio/UI cue to user**: On allow/extend, orchestrator sends **spoken TTS** (audio cue) through glasses speakers and, optionally, a **short line or icon on the display** so the user knows a save is happening. Brief and skippable if policy allows silent capture.
-4. **Capture**: Orchestrator sends **capture control** to the glasses camera; camera returns **frames** into SS-Glasses-Core (no cloud round-trip for the image path).
-5. **Understand scene**: Orchestrator passes an image batch to **on-device VLM**; VLM returns **scene description + OCR** (signs, level, zone text when readable). Store this as a **text retrieval cue** in the marker, not ground truth; avoid false precision on blurry frames.
-6. **Persist marker**: Orchestrator writes a **parking marker** to **Ambient-Memory**: keyframe(s), VLM text, timestamp, GPS if available, thumbnail for UI.
-
-### What gets stored (parking marker)
-
-- One or more frames / thumbnail from glasses  
-- VLM caption + OCR JSON  
-- Timestamp  
-- GPS (when available)  
-- Enough metadata for ranked recall later  
-
----
-
-## Flow B: Recall (“Where did I park?”)
-
-User-initiated (or nudged) lookup. Sensor data does **not** go directly to the voice assistant; recall uses **Ambient-Memory** written during Flow A.
-
-**Sequence chart:** same `autonumber` on arrows (1 through 5 for the main path).
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant U as User
-    participant M as Glasses mic/display
-    participant VA as Voice assistant
-    participant A as Ambient-Memory
-
-    U->>M: Speech (hotword or utterance)
-    M->>VA: Audio / NL request
-    VA->>A: Smart fetch (rank parking markers)
-    A-->>VA: Frames + text + metadata
-    VA->>M: TTS · UI (spoken answer + thumbnails)
-    M->>U: Hear / see recall result
-```
-
-### Step-by-step
-
-1. **User speaks**: Hotword or natural language on glasses (e.g. “Where did I park?”).
-2. **Voice path**: Mic/display sends **speech** to the on-device **voice assistant** on the phone.
-3. **Smart fetch**: Voice assistant queries **Ambient-Memory** (time, location, caption/OCR, recency) and picks the best parking marker(s).
-4. **Respond on glasses**: Assistant returns **TTS + UI** to mic/display (spoken summary, optional thumbnail or short text on display).
-5. **Optional nudge**: Product may use **GPS nudge** inside the voice assistant (e.g. “You’re near where you parked yesterday”) without wiring raw sensor streams to VA; location context can also come from markers already stored with GPS at save time.
-
----
-
-## End-to-end picture
-
-**Flowchart:** numbers are **inside each box** (manual labels). Arrows are not auto-numbered.
-
-```mermaid
-flowchart LR
-    subgraph Park["Flow A: Mark (automatic)"]
-        direction TB
-        A1["① Sensors"] --> A2["② Orchestrator + Policy"]
-        A2 --> A3["③ Audio/UI cue + capture"]
-        A3 --> A4["④ VLM"]
-        A4 --> A5["⑤ Ambient-Memory"]
+        subgraph Mobile["<b><span style='font-size:20px'>Mobile phone</span></b>"]
+            direction TB
+            VA["<b>Voice assistant</b><br/>Hotword · GPS nudge · recall"]
+            Sens["<b>Sensors</b><br/>Motion · GPS"]
+            subgraph SSGC["<b><span style='font-size:16px'>SS-Glasses-Core</span></b>"]
+                direction TB
+                PolicyCP["<b>EventPolicy:Park</b><br/>Gates · timing · negatives"]
+                OrchCP["<b>EventOrchestrator:Park</b><br/>Audio/UI · capture · VLM · save"]
+            end
+            VLM["<b>On-device VLM</b><br/>Scene + OCR"]
+            AMEM[("<b>Ambient-Memory</b><br/>Frames + text")]
+        end
     end
 
-    subgraph Recall["Flow B: Recall (user)"]
-        direction TB
-        B1["① User speech"] --> B2["② Voice assistant"]
-        B2 --> B5["③ Ambient-Memory"]
-        B5 --> B3["④ TTS · UI on glasses"]
+    subgraph BottomDeck[" "]
+        direction RL
+        subgraph LegendRow["Legend"]
+            direction LR
+            LgG("<b>Glasses</b>")
+            LgM("<b>Voice</b>")
+            LgSen("<b>Sensors</b>")
+            LgL("<b>VLM</b>")
+            LgA("<b>Ambient</b>")
+            LgS("<b>SS-Core</b>")
+            LgG --- LgM --- LgSen --- LgL --- LgA --- LgS
+        end
     end
 
-    A5 -.->|smart fetch| B5
+    MainRow ~~~ BottomDeck
+
+    Sens -->|"① context"| OrchCP
+    OrchCP <-->|"② policy"| PolicyCP
+    OrchCP -->|"③ audio/UI cue"| Mic
+    OrchCP -->|"④ capture control"| Cam
+    Cam -->|"⑤ frames"| OrchCP
+    OrchCP -->|"⑥ analyze"| VLM
+    VLM -->|"⑦ text"| OrchCP
+    OrchCP -->|"⑧ save"| AMEM
+
+    User --> Mic
+    Mic -. speech .-> VA
+    VA -->|TTS · UI| Mic
+    VA <-->|smart fetch| AMEM
+
+    classDef glasses fill:#cfe4f5,stroke:#3a6fa0,color:#111,stroke-width:2px
+    classDef mobile fill:#fde8cc,stroke:#b86a2b,color:#111,stroke-width:2px
+    classDef sensors fill:#fef5c7,stroke:#b8901f,color:#111,stroke-width:2px
+    classDef onDeviceVlm fill:#d9ead3,stroke:#4e7a3a,color:#111,stroke-width:2px
+    classDef ambientMem fill:#f4d4c4,stroke:#a85a35,color:#111,stroke-width:2px
+    classDef ssCoreLight fill:#e6def0,stroke:#7e57c2,color:#111,stroke-width:2px
+    classDef legendGlasses fill:#cfe4f5,stroke:#3a6fa0,color:#111
+    classDef legendMobile fill:#fde8cc,stroke:#b86a2b,color:#111
+    classDef legendSensors fill:#fef5c7,stroke:#b8901f,color:#111
+    classDef legendVlm fill:#d9ead3,stroke:#4e7a3a,color:#111
+    classDef legendAmbient fill:#f4d4c4,stroke:#a85a35,color:#111
+    classDef legendSS fill:#e6def0,stroke:#7e57c2,color:#111
+    classDef colHidden fill:none,stroke:none,color:#111
+
+    style SSGC fill:#e6def0,stroke:#7e57c2,stroke-width:2px
+    style GCol fill:none,stroke:none
+    style Glasses stroke:#3a6fa0,stroke-width:2px
+    style Mobile stroke:#b86a2b,stroke-width:2px
+    style MainRow fill:none,stroke:none
+    style BottomDeck fill:none,stroke:none
+    style LegendRow fill:#fafafa,stroke:#bdbdbd,color:#111,stroke-width:1px
+
+    class Cam,Mic glasses
+    class VA mobile
+    class Sens sensors
+    class VLM onDeviceVlm
+    class AMEM ambientMem
+    class PolicyCP,OrchCP ssCoreLight
+    class GCol,Spacer1,Spacer2 colHidden
+
+    class LgG legendGlasses
+    class LgM legendMobile
+    class LgSen legendSensors
+    class LgL legendVlm
+    class LgA legendAmbient
+    class LgS legendSS
 ```
-
----
-
-## Design notes
-
-- **No OEM SDK**: Park detection uses phone **motion + GPS** and glasses **camera frames** into SS-Glasses-Core; no direct vehicle bus integration in this design.
-- **Privacy / offline**: Capture, VLM, and storage are on-device by default; cloud is out of scope for this idea unless confidence is low (separate policy).
-- **Separation of concerns**: **Sensors → orchestrator** for *when* to save; **voice assistant → Ambient-Memory** for *how* to answer recall questions.
-- **Low-confidence VLM**: Prefer vague **retrieval text** (“indoor garage, pillar B area”) over wrong specifics (e.g. asserting “Level P3” from a blurry sign).
-
----
-
-## Related artifacts
-
-| File | Purpose |
-| --- | --- |
-| `idea2_mark_car_parking_spot_architecture.mermaid` | System architecture (Mermaid source) |
-| `idea2_mark_car_parking_spot_architecture.md` | GitHub-renderable architecture |
-| `idea2_mark_car_parking_spot_eraser.dsl` | Eraser.io diagram-as-code (earlier draft; sensor→VA line removed in architecture) |
-| `mobileImageCaption/docs/mobile_ondevice_image_caption_requirements.md` | Broader on-device caption / park-memory requirements |

@@ -1,0 +1,13 @@
+%% Idea 2 — numbering demo (paste into mermaid.live)
+%% Top: sequence autonumber on arrows | Bottom: flowchart numbers on boxes and edges
+
+flowchart TB
+    subgraph Seq["Sequence: autonumber on arrows"]
+        direction TB
+        note1["See idea2.md Flow A — rendered sequence shows 1,2,3 on each arrow"]
+    end
+
+    subgraph Fc["Flowchart: manual numbers"]
+        direction LR
+        N1["① in box"] -->|"② on edge"| N2["③ in box"]
+    end
