@@ -55,7 +55,7 @@ flowchart LR
     GCol ~~~ BottomDeck
     Sens -- ① context --> OrchCP
     OrchCP <-- ② policy --> PolicyCP
-    OrchCP -- ③ audio cue --> Mic
+    OrchCP -- ③ audio cue --> Glasses
     OrchCP -- ④ capture control --> Cam
     Cam -- ⑤ frames --> OrchCP
     OrchCP -- ⑥ analyze --> VLM
@@ -63,7 +63,7 @@ flowchart LR
     OrchCP -- ⑧ save --> AMEM
     User --> Mic
     Mic -. speech .-> VA
-    VA -- TTS · UI --> Mic
+    VA -- audio response --> Glasses
     VA <-- smart fetch --> AMEM
 
      PolicyCP:::ssCoreLight
