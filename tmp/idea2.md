@@ -2,13 +2,24 @@
 
 ```mermaid
 %% Idea 2 — Mark Car Parking Spot · mermaid.live
-%% Layout: Mobile (top) | Glasses (bottom) | Legend
+%% Layout: Glasses (left) | Mobile (right) | Legend (bottom) — same pattern as Idea 1
 %% <b>…</b> = bold title inside a box
 %%{init: {'flowchart': {'htmlLabels': true, 'padding': 6, 'nodeSpacing': 20, 'rankSpacing': 28}}}%%
 
 flowchart TB
     subgraph MainRow[" "]
-        direction TB
+        direction LR
+        subgraph GCol[" "]
+            direction TB
+            User([User])
+            ParkAction["<b>Park & walk away</b><br/>GPS · motion change"]
+            subgraph Glasses["<b><span style='font-size:20px'>Glasses</span></b>"]
+                direction TB
+                Cam["<b>Camera</b>"]
+                Mic["<b>Mic</b>"]
+            end
+        end
+
         subgraph Mobile["<b><span style='font-size:20px'>Mobile phone</span></b>"]
             direction TB
             VA["<b>Voice assistant</b><br/>Hotword · GPS nudge · recall"]
@@ -20,17 +31,6 @@ flowchart TB
             end
             VLM["<b>On-device VLM</b><br/>Scene + OCR"]
             AMEM[("<b>Ambient-Memory</b><br/>Frames + text")]
-        end
-
-        subgraph GCol[" "]
-            direction TB
-            User([User])
-            ParkAction["<b>Park & walk away</b><br/>GPS · motion change"]
-            subgraph Glasses["<b><span style='font-size:20px'>Glasses</span></b>"]
-                direction TB
-                Cam["<b>Camera</b>"]
-                Mic["<b>Mic</b>"]
-            end
         end
     end
 
@@ -54,16 +54,16 @@ flowchart TB
     ParkAction --> Sens
     Sens -->|"① context"| OrchCP
     OrchCP <-->|"② policy"| PolicyCP
-    OrchCP -->|"③ audio cue"| Glasses
-    OrchCP -->|"④ capture control"| Cam
-    Cam -.->|"⑤ frames"| OrchCP
+    OrchCP -.->|"③ audio cue"| Mic
+    OrchCP -.->|"④ capture control"| Cam
+    Cam -->|"⑤ frames"| OrchCP
     OrchCP -->|"⑥ analyze"| VLM
     VLM -->|"⑦ text"| OrchCP
     OrchCP -->|"⑧ save"| AMEM
 
     User --> Mic
-    Mic -. speech .-> VA
-    VA -->|audio response| Glasses
+    Mic -->|speech| VA
+    VA -.->|audio response| Mic
     VA <-->|smart fetch| AMEM
 
     classDef glasses fill:#cfe4f5,stroke:#3a6fa0,color:#111,stroke-width:2px
