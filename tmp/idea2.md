@@ -54,7 +54,7 @@ flowchart TB
     ParkAction --> Sens
     Sens -->|"① context"| OrchCP
     OrchCP <-->|"② policy"| PolicyCP
-    OrchCP -->|"③ audio cue"| Glasses
+    OrchCP -->|"③ audio cue"| Mic
     OrchCP -->|"④ capture control"| Cam
     Cam -->|"⑤ frames"| OrchCP
     OrchCP -->|"⑥ analyze"| VLM
