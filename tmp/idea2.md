@@ -9,18 +9,6 @@
 flowchart TB
     subgraph MainRow[" "]
         direction LR
-        subgraph GCol[" "]
-            direction TB
-            User([User])
-            ParkAction["<b>Park & walk away</b><br/>GPS · motion change"]
-            subgraph Glasses["<b><span style='font-size:20px'>Glasses</span></b>"]
-                direction TB
-                Cam["<b>Camera</b>"]
-                Display["<b>Display</b><br/>Confirmation glance"]
-                Mic["<b>Mic</b>"]
-            end
-        end
-
         subgraph Mobile["<b><span style='font-size:20px'>Mobile phone</span></b>"]
             direction TB
             VA["<b>Voice assistant</b><br/>Hotword · GPS nudge · recall"]
@@ -32,6 +20,18 @@ flowchart TB
             end
             VLM["<b>On-device VLM</b><br/>Scene + OCR"]
             AMEM[("<b>Ambient-Memory</b><br/>Frames + text")]
+        end
+
+        subgraph GCol[" "]
+            direction TB
+            User([User])
+            ParkAction["<b>Park & walk away</b><br/>GPS · motion change"]
+            subgraph Glasses["<b><span style='font-size:20px'>Glasses</span></b>"]
+                direction TB
+                Cam["<b>Camera</b>"]
+                Display["<b>Display</b><br/>Confirmation glance"]
+                Mic["<b>Mic</b>"]
+            end
         end
     end
 
@@ -53,6 +53,7 @@ flowchart TB
 
     User --> ParkAction
     ParkAction --> Sens
+    ParkAction --> Display
     Sens -->|"① context"| OrchCP
     OrchCP <-->|"② policy"| PolicyCP
     OrchCP -->|"③ audio cue"| Mic
