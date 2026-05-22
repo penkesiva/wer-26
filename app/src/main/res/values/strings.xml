@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GolfCues</string>
+    <string name="notification_channel_name">Golf Mode</string>
+    <string name="notification_title">GolfCues is listening for golf shots</string>
+    <string name="notification_text">Golf Mode is active</string>
+    <string name="notification_tap_hint">Tap to return to Golf Mode</string>
+    <string name="action_stop_golf_mode">Stop Golf Mode</string>
+    <string name="action_open_app">Open App</string>
+    <string name="permission_microphone_rationale">GolfCues needs microphone access to detect golf impact sounds during Golf Mode.\nAudio is processed on-device.</string>
+</resources>
