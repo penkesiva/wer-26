@@ -25,7 +25,7 @@ class HandLandmarkerHelper(
     private var closed = false
 
     @Volatile
-    var cropPaddingPx: Int = 24
+    var cropPaddingPx: Int = 8
 
     @Volatile
     var cropMode: CropMode = CropMode.BETWEEN_HANDS

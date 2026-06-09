@@ -22,7 +22,9 @@ class AppSettings(context: Context) {
     var chimeOnTwoHands by mutableStateOf(prefs.getBoolean(KEY_CHIME, true))
         private set
 
-    var cropPaddingPx by mutableIntStateOf(prefs.getInt(KEY_CROP_PADDING, 24))
+    var cropPaddingPx by mutableIntStateOf(
+        prefs.getInt(KEY_CROP_PADDING, 8).coerceIn(0, 24),
+    )
         private set
 
     var includeHandsInCrop by mutableStateOf(prefs.getBoolean(KEY_INCLUDE_HANDS_IN_CROP, false))
@@ -68,7 +70,7 @@ class AppSettings(context: Context) {
     }
 
     fun updateCropPaddingPx(padding: Int) {
-        cropPaddingPx = padding.coerceIn(8, 64)
+        cropPaddingPx = padding.coerceIn(0, 24)
         prefs.edit().putInt(KEY_CROP_PADDING, cropPaddingPx).apply()
     }
 

@@ -115,9 +115,10 @@ fun SettingsSheet(
             Slider(
                 value = settings.cropPaddingPx.toFloat(),
                 onValueChange = { settings.updateCropPaddingPx(it.toInt()) },
-                valueRange = 8f..64f,
-                steps = 6,
+                valueRange = 0f..24f,
+                steps = 8,
             )
+            SettingHint(text = stringResource(R.string.settings_crop_padding_hint))
 
             Spacer(modifier = Modifier.height(16.dp))
         }

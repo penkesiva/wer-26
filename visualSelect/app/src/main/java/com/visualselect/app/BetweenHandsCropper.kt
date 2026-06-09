@@ -63,7 +63,7 @@ object BetweenHandsCropper {
         handBoxes: List<RectF>,
         imageWidth: Int,
         imageHeight: Int,
-        paddingPx: Int = 24,
+        paddingPx: Int = 8,
     ): CropRect? {
         if (handBoxes.size < 2 || imageWidth <= 0 || imageHeight <= 0) return null
 
@@ -71,16 +71,19 @@ object BetweenHandsCropper {
         val leftHand = sorted[0]
         val rightHand = sorted[1]
 
-        // Small inset from each hand so fingers are not in the saved crop.
-        val handInsetPx = (paddingPx / 4).coerceIn(4, 12)
+        // Minimal horizontal inset — just clear finger edges, not the full padding slider.
+        val handInsetPx = 2f
         val innerLeft = leftHand.right + handInsetPx
         val innerRight = rightHand.left - handInsetPx
         if (innerLeft >= innerRight) return null
 
+        // Slider adds a little vertical breathing room only (not full padding on all sides).
+        val verticalPad = (paddingPx * 0.35f).coerceIn(0f, 12f)
+
         val left = innerLeft.toInt().coerceIn(0, imageWidth - 1)
         val right = innerRight.toInt().coerceIn(left + 1, imageWidth)
-        val top = (minOf(leftHand.top, rightHand.top) - paddingPx).toInt().coerceIn(0, imageHeight - 1)
-        val bottom = (maxOf(leftHand.bottom, rightHand.bottom) + paddingPx).toInt().coerceIn(top + 1, imageHeight)
+        val top = (minOf(leftHand.top, rightHand.top) - verticalPad).toInt().coerceIn(0, imageHeight - 1)
+        val bottom = (maxOf(leftHand.bottom, rightHand.bottom) + verticalPad).toInt().coerceIn(top + 1, imageHeight)
 
         val rect = CropRect(left, top, right, bottom)
         return if (rect.isValid(minSizePx = 24)) rect else null

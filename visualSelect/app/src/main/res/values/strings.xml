@@ -29,6 +29,7 @@
     <string name="settings_include_hands">Include hands in crop</string>
     <string name="settings_include_hands_hint">Off = save only the region between hands (default). On = frame both hands too.</string>
     <string name="settings_crop_padding">Crop padding: %d px</string>
+    <string name="settings_crop_padding_hint">Between-hands: light vertical margin only. Include-hands: margin around the frame.</string>
     <string name="settings_auto_save">Auto-save to gallery</string>
     <string name="settings_auto_save_hint">Saves when both hands stay steady (Idea 1 style).</string>
     <string name="settings_auto_save_stability">Hold steady: %.1f s</string>
