@@ -3,6 +3,7 @@ package com.visualselect.app
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.PointF
 import android.graphics.RectF
 import android.os.Bundle
 import android.widget.Toast
@@ -105,7 +106,7 @@ private fun CameraCaptureScreen() {
     var handSnapshot by remember { mutableStateOf(HandDetectionSnapshot()) }
     var previewSize by remember { mutableStateOf(Size.Zero) }
     var showSettings by remember { mutableStateOf(false) }
-    var hadTwoHands by remember { mutableStateOf(false) }
+    var hadGestureReady by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
     var justSaved by remember { mutableStateOf(false) }
     var holdProgressSec by remember { mutableFloatStateOf(0f) }
@@ -132,7 +133,8 @@ private fun CameraCaptureScreen() {
         }
     }
 
-    LaunchedEffect(settings.cropPaddingPx, settings.cropMode, settings.squareCrop) {
+    LaunchedEffect(settings.gestureMode, settings.cropPaddingPx, settings.cropMode, settings.squareCrop) {
+        helper.updateGestureMode(settings.gestureMode)
         helper.cropPaddingPx = settings.cropPaddingPx
         helper.cropMode = settings.cropMode
         helper.squareCrop = settings.squareCrop
@@ -140,10 +142,10 @@ private fun CameraCaptureScreen() {
 
     LaunchedEffect(handSnapshot, settings.chimeOnTwoHands) {
         val ready = handSnapshot.isReady
-        if (settings.chimeOnTwoHands && ready && !hadTwoHands) {
+        if (settings.chimeOnTwoHands && ready && !hadGestureReady) {
             chimePlayer.playTwoHandsChime()
         }
-        hadTwoHands = ready
+        hadGestureReady = ready
     }
 
     LaunchedEffect(
@@ -232,6 +234,7 @@ private fun CameraCaptureScreen() {
             OverlayCanvas(
                 handBoxes = handSnapshot.handBoxes,
                 cropRect = handSnapshot.cropRect,
+                aimPoint = handSnapshot.aimPoint,
                 frameWidth = helper.lastFrameWidth,
                 frameHeight = helper.lastFrameHeight,
                 previewWidth = previewSize.width,
@@ -240,28 +243,17 @@ private fun CameraCaptureScreen() {
         }
 
         Text(
-            text = when {
-                isSaving -> stringResource(R.string.status_saving)
-                justSaved -> stringResource(R.string.status_saved)
-                handSnapshot.isReady && settings.autoSaveEnabled && cooldownRemainingSec > 0f ->
-                    stringResource(R.string.status_save_cooldown, cooldownRemainingSec)
-                handSnapshot.isReady && settings.autoSaveEnabled && holdProgressSec > 0f ->
-                    stringResource(
-                        R.string.status_holding,
-                        holdProgressSec,
-                        settings.autoSaveStabilitySec,
-                    )
-                handSnapshot.isReady -> stringResource(R.string.status_ready)
-                handSnapshot.handCount >= 2 -> stringResource(
-                    if (settings.includeHandsInCrop) {
-                        R.string.status_two_hands_no_crop_include
-                    } else {
-                        R.string.status_two_hands_no_crop
-                    },
-                )
-                handSnapshot.handCount == 1 -> stringResource(R.string.status_one_hand)
-                else -> stringResource(R.string.status_waiting)
-            },
+            text = gestureStatusText(
+                snapshot = handSnapshot,
+                gestureMode = settings.gestureMode,
+                includeHandsInCrop = settings.includeHandsInCrop,
+                autoSaveEnabled = settings.autoSaveEnabled,
+                isSaving = isSaving,
+                justSaved = justSaved,
+                cooldownRemainingSec = cooldownRemainingSec,
+                holdProgressSec = holdProgressSec,
+                holdStabilitySec = settings.autoSaveStabilitySec,
+            ),
             color = Color.White,
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -320,6 +312,48 @@ private fun CameraCaptureScreen() {
     }
 }
 
+@Composable
+private fun gestureStatusText(
+    snapshot: HandDetectionSnapshot,
+    gestureMode: GestureMode,
+    includeHandsInCrop: Boolean,
+    autoSaveEnabled: Boolean,
+    isSaving: Boolean,
+    justSaved: Boolean,
+    cooldownRemainingSec: Float,
+    holdProgressSec: Float,
+    holdStabilitySec: Float,
+): String {
+    if (isSaving) return stringResource(R.string.status_saving)
+    if (justSaved) return stringResource(R.string.status_saved)
+    if (snapshot.isReady && autoSaveEnabled && cooldownRemainingSec > 0f) {
+        return stringResource(R.string.status_save_cooldown, cooldownRemainingSec)
+    }
+    if (snapshot.isReady && autoSaveEnabled && holdProgressSec > 0f) {
+        return stringResource(R.string.status_holding, holdProgressSec, holdStabilitySec)
+    }
+
+    return when (gestureMode) {
+        GestureMode.ONE_FINGER_POINT -> when {
+            snapshot.isReady -> stringResource(R.string.status_point_ready)
+            snapshot.handCount >= 1 -> stringResource(R.string.status_point_extend)
+            else -> stringResource(R.string.status_point_waiting)
+        }
+        GestureMode.TWO_HANDS -> when {
+            snapshot.isReady -> stringResource(R.string.status_ready)
+            snapshot.handCount >= 2 -> stringResource(
+                if (includeHandsInCrop) {
+                    R.string.status_two_hands_no_crop_include
+                } else {
+                    R.string.status_two_hands_no_crop
+                },
+            )
+            snapshot.handCount == 1 -> stringResource(R.string.status_one_hand)
+            else -> stringResource(R.string.status_waiting)
+        }
+    }
+}
+
 private suspend fun saveCropToGallery(
     context: android.content.Context,
     frame: Bitmap?,
@@ -357,6 +391,7 @@ private fun processFrame(
 private fun OverlayCanvas(
     handBoxes: List<RectF>,
     cropRect: BetweenHandsCropper.CropRect?,
+    aimPoint: PointF?,
     frameWidth: Int,
     frameHeight: Int,
     previewWidth: Float,
@@ -389,6 +424,30 @@ private fun OverlayCanvas(
                 topLeft = Offset(mapX(rect.left.toFloat()), mapY(rect.top.toFloat())),
                 size = Size(rect.width * scale, rect.height * scale),
                 style = Stroke(width = 4f),
+            )
+        }
+
+        aimPoint?.let { point ->
+            val cx = mapX(point.x)
+            val cy = mapY(point.y)
+            val r = 10f
+            drawCircle(
+                color = Color(0xFFFF5722),
+                radius = r,
+                center = Offset(cx, cy),
+                style = Stroke(width = 3f),
+            )
+            drawLine(
+                color = Color(0xFFFF5722),
+                start = Offset(cx - r * 1.4f, cy),
+                end = Offset(cx + r * 1.4f, cy),
+                strokeWidth = 2f,
+            )
+            drawLine(
+                color = Color(0xFFFF5722),
+                start = Offset(cx, cy - r * 1.4f),
+                end = Offset(cx, cy + r * 1.4f),
+                strokeWidth = 2f,
             )
         }
     }

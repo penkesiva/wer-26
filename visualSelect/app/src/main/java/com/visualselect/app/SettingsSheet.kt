@@ -44,6 +44,13 @@ fun SettingsSheet(
             )
 
             SettingToggle(
+                label = stringResource(R.string.settings_one_finger_point),
+                subtitle = stringResource(R.string.settings_one_finger_point_hint),
+                checked = settings.oneFingerPointMode,
+                onCheckedChange = settings::updateOneFingerPointMode,
+            )
+
+            SettingToggle(
                 label = stringResource(R.string.settings_autofocus),
                 subtitle = stringResource(R.string.settings_autofocus_hint),
                 checked = settings.autofocusEnabled,
@@ -104,12 +111,14 @@ fun SettingsSheet(
                 SettingHint(text = stringResource(R.string.settings_auto_save_cooldown_hint))
             }
 
-            SettingToggle(
-                label = stringResource(R.string.settings_include_hands),
-                subtitle = stringResource(R.string.settings_include_hands_hint),
-                checked = settings.includeHandsInCrop,
-                onCheckedChange = settings::updateIncludeHandsInCrop,
-            )
+            if (!settings.oneFingerPointMode) {
+                SettingToggle(
+                    label = stringResource(R.string.settings_include_hands),
+                    subtitle = stringResource(R.string.settings_include_hands_hint),
+                    checked = settings.includeHandsInCrop,
+                    onCheckedChange = settings::updateIncludeHandsInCrop,
+                )
+            }
 
             SettingToggle(
                 label = stringResource(R.string.settings_square_crop),

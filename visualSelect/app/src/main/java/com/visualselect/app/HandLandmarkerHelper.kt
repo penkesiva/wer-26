@@ -33,19 +33,28 @@ class HandLandmarkerHelper(
     @Volatile
     var squareCrop: Boolean = true
 
+    @Volatile
+    var gestureMode: GestureMode = GestureMode.TWO_HANDS
+
     private var lastAppliedTimestampMs = 0L
     private var consecutiveEmptyResults = 0
     private var lastSnapshot = HandDetectionSnapshot()
 
     fun setup() {
+        handLandmarker?.close()
+        handLandmarker = null
+        if (closed) return
+
         val baseOptions = BaseOptions.builder()
             .setModelAssetPath("hand_landmarker.task")
             .build()
 
+        val numHands = if (gestureMode == GestureMode.ONE_FINGER_POINT) 1 else 2
+
         val options = HandLandmarker.HandLandmarkerOptions.builder()
             .setBaseOptions(baseOptions)
             .setRunningMode(RunningMode.LIVE_STREAM)
-            .setNumHands(2)
+            .setNumHands(numHands)
             .setMinHandDetectionConfidence(0.5f)
             .setMinHandPresenceConfidence(0.5f)
             .setMinTrackingConfidence(0.5f)
@@ -54,6 +63,13 @@ class HandLandmarkerHelper(
             .build()
 
         handLandmarker = HandLandmarker.createFromOptions(appContext, options)
+        lastSnapshot = HandDetectionSnapshot(gestureMode = gestureMode)
+    }
+
+    fun updateGestureMode(mode: GestureMode) {
+        if (gestureMode == mode) return
+        gestureMode = mode
+        setup()
     }
 
     fun detectAsync(bitmap: Bitmap, timestampMs: Long) {
@@ -81,7 +97,7 @@ class HandLandmarkerHelper(
             if (consecutiveEmptyResults < EMPTY_FRAMES_BEFORE_CLEAR) {
                 return
             }
-            HandDetectionSnapshot()
+            HandDetectionSnapshot(gestureMode = gestureMode)
         } else {
             consecutiveEmptyResults = 0
             val imageWidth = lastFrameWidth
@@ -90,23 +106,10 @@ class HandLandmarkerHelper(
                 return
             }
 
-            val handFrames = landmarks.map { hand ->
-                BetweenHandsCropper.handFrameFromLandmarks(hand, imageWidth, imageHeight)
+            when (gestureMode) {
+                GestureMode.ONE_FINGER_POINT -> buildPointSnapshot(landmarks[0], imageWidth, imageHeight)
+                GestureMode.TWO_HANDS -> buildTwoHandSnapshot(landmarks, imageWidth, imageHeight)
             }
-            val boxes = handFrames.map { it.bounds }
-            val crop = BetweenHandsCropper.computeCropForHands(
-                handFrames = handFrames,
-                imageWidth = imageWidth,
-                imageHeight = imageHeight,
-                paddingPx = cropPaddingPx,
-                mode = cropMode,
-                squareCrop = squareCrop,
-            )
-            HandDetectionSnapshot(
-                handCount = landmarks.size,
-                cropRect = crop,
-                handBoxes = boxes,
-            )
         }
 
         if (snapshot == lastSnapshot) {
@@ -119,6 +122,59 @@ class HandLandmarkerHelper(
                 onHandsDetected(snapshot)
             }
         }
+    }
+
+    private fun buildPointSnapshot(
+        hand: List<com.google.mediapipe.tasks.components.containers.NormalizedLandmark>,
+        imageWidth: Int,
+        imageHeight: Int,
+    ): HandDetectionSnapshot {
+        val frame = BetweenHandsCropper.handFrameFromLandmarks(hand, imageWidth, imageHeight)
+        val pointing = PointGestureDetector.detectPointing(hand, imageWidth, imageHeight)
+        val crop = pointing?.let {
+            PointCropper.computePointCrop(
+                aimPoint = it.aimPoint,
+                imageWidth = imageWidth,
+                imageHeight = imageHeight,
+                paddingPx = cropPaddingPx,
+                squareCrop = squareCrop,
+            )
+        }
+
+        return HandDetectionSnapshot(
+            handCount = 1,
+            cropRect = crop,
+            handBoxes = listOf(frame.bounds),
+            isPointing = pointing != null,
+            aimPoint = pointing?.aimPoint,
+            gestureMode = GestureMode.ONE_FINGER_POINT,
+        )
+    }
+
+    private fun buildTwoHandSnapshot(
+        landmarks: List<List<com.google.mediapipe.tasks.components.containers.NormalizedLandmark>>,
+        imageWidth: Int,
+        imageHeight: Int,
+    ): HandDetectionSnapshot {
+        val handFrames = landmarks.map { hand ->
+            BetweenHandsCropper.handFrameFromLandmarks(hand, imageWidth, imageHeight)
+        }
+        val boxes = handFrames.map { it.bounds }
+        val crop = BetweenHandsCropper.computeCropForHands(
+            handFrames = handFrames,
+            imageWidth = imageWidth,
+            imageHeight = imageHeight,
+            paddingPx = cropPaddingPx,
+            mode = cropMode,
+            squareCrop = squareCrop,
+        )
+
+        return HandDetectionSnapshot(
+            handCount = landmarks.size,
+            cropRect = crop,
+            handBoxes = boxes,
+            gestureMode = GestureMode.TWO_HANDS,
+        )
     }
 
     @Volatile
