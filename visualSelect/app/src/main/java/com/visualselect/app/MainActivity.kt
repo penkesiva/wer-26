@@ -35,7 +35,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -51,7 +50,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.util.concurrent.Executors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -111,6 +109,7 @@ private fun CameraCaptureScreen() {
     var isSaving by remember { mutableStateOf(false) }
     var justSaved by remember { mutableStateOf(false) }
     var holdProgressSec by remember { mutableFloatStateOf(0f) }
+    var cooldownRemainingSec by remember { mutableFloatStateOf(0f) }
 
     val autoSaveTracker = remember {
         AutoSaveTracker(stabilityMs = 1500L, cooldownMs = 3000L)
@@ -154,21 +153,23 @@ private fun CameraCaptureScreen() {
             autoSaveTracker.stabilityMs = (settings.autoSaveStabilitySec * 1000).toLong()
             autoSaveTracker.cooldownMs = (settings.autoSaveCooldownSec * 1000).toLong()
 
-            val snapshot = snapshotFlow { handSnapshot }.first()
+            val snapshot = handSnapshot
             val ready = snapshot.isReady
             val rect = snapshot.cropRect
             val now = System.currentTimeMillis()
 
             if (settings.autoSaveEnabled && ready && rect != null) {
-                val progressMs = autoSaveTracker.stableProgressMs(true, rect, now)
-                holdProgressSec = progressMs / 1000f
+                val evaluation = autoSaveTracker.evaluate(true, rect, now)
+                holdProgressSec = evaluation.progressMs / 1000f
+                cooldownRemainingSec = evaluation.cooldownRemainingMs / 1000f
 
-                if (!isSaving && autoSaveTracker.shouldSave(true, rect, now)) {
+                if (!isSaving && evaluation.shouldSave) {
                     isSaving = true
-                    val frame = snapshotFlow { latestBitmap.value }.first()
+                    val frame = latestBitmap.value
                     val saved = saveCropToGallery(context, frame, rect)
                     isSaving = false
                     if (saved) {
+                        autoSaveTracker.markSaved(now)
                         justSaved = true
                         Toast.makeText(context, R.string.saved_to_gallery, Toast.LENGTH_SHORT).show()
                         delay(2000)
@@ -179,7 +180,8 @@ private fun CameraCaptureScreen() {
                 }
             } else {
                 holdProgressSec = 0f
-                autoSaveTracker.stableProgressMs(ready, rect, now)
+                cooldownRemainingSec = 0f
+                autoSaveTracker.evaluate(ready, rect, now)
             }
 
             delay(100)
@@ -239,6 +241,8 @@ private fun CameraCaptureScreen() {
             text = when {
                 isSaving -> stringResource(R.string.status_saving)
                 justSaved -> stringResource(R.string.status_saved)
+                handSnapshot.isReady && settings.autoSaveEnabled && cooldownRemainingSec > 0f ->
+                    stringResource(R.string.status_save_cooldown, cooldownRemainingSec)
                 handSnapshot.isReady && settings.autoSaveEnabled && holdProgressSec > 0f ->
                     stringResource(
                         R.string.status_holding,

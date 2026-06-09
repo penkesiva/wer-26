@@ -31,7 +31,7 @@ class AppSettings(context: Context) {
     var autoSaveStabilitySec by mutableFloatStateOf(prefs.getFloat(KEY_AUTO_SAVE_STABILITY, 1.5f))
         private set
 
-    var autoSaveCooldownSec by mutableFloatStateOf(prefs.getFloat(KEY_AUTO_SAVE_COOLDOWN, 3f))
+    var autoSaveCooldownSec by mutableFloatStateOf(prefs.getFloat(KEY_AUTO_SAVE_COOLDOWN, 2f))
         private set
 
     /** Bumps when any camera-related setting changes so the preview rebinds. */

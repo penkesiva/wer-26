@@ -1,62 +1,66 @@
 package com.visualselect.app
 
 /**
- * Fires once when two hands and a crop stay stable long enough, then waits for hands
- * to leave before arming again.
+ * Fires when two hands and a crop stay stable long enough, then enforces a cooldown
+ * before the next save (hands can stay in frame).
  */
 class AutoSaveTracker(
     stabilityMs: Long = 1500L,
     cooldownMs: Long = 3000L,
-    private val maxCropMovementPx: Int = 24,
+    private val maxCropMovementPx: Int = 48,
 ) {
     var stabilityMs: Long = stabilityMs
     var cooldownMs: Long = cooldownMs
 
     private var stableSinceMs: Long? = null
     private var lastCrop: BetweenHandsCropper.CropRect? = null
-    private var lastSaveMs: Long = 0
-    private var armedForGesture: Boolean = true
+    private var lastSaveMs: Long = 0L
 
-    fun stableProgressMs(ready: Boolean, cropRect: BetweenHandsCropper.CropRect?, nowMs: Long): Long {
-        if (!ready || cropRect == null) return 0L
-        updateStability(ready, cropRect, nowMs)
-        val since = stableSinceMs ?: return 0L
-        return (nowMs - since).coerceAtMost(stabilityMs)
-    }
+    data class Evaluation(
+        val progressMs: Long,
+        val shouldSave: Boolean,
+        val inCooldown: Boolean,
+        val cooldownRemainingMs: Long,
+    )
 
-    fun shouldSave(ready: Boolean, cropRect: BetweenHandsCropper.CropRect?, nowMs: Long): Boolean {
+    fun evaluate(
+        ready: Boolean,
+        cropRect: BetweenHandsCropper.CropRect?,
+        nowMs: Long,
+    ): Evaluation {
         if (!ready || cropRect == null) {
-            if (!ready) {
-                armedForGesture = true
-            }
             resetStability()
-            return false
+            return Evaluation(
+                progressMs = 0L,
+                shouldSave = false,
+                inCooldown = false,
+                cooldownRemainingMs = 0L,
+            )
         }
 
-        updateStability(ready, cropRect, nowMs)
+        val inCooldown = nowMs - lastSaveMs < cooldownMs
+        val cooldownRemainingMs = if (inCooldown) cooldownMs - (nowMs - lastSaveMs) else 0L
 
-        if (!armedForGesture) return false
+        updateStability(cropRect, nowMs)
+        val since = stableSinceMs ?: return Evaluation(0L, false, inCooldown, cooldownRemainingMs)
+        val elapsed = nowMs - since
+        val progressMs = if (inCooldown) 0L else elapsed.coerceAtMost(stabilityMs)
+        val shouldSave = !inCooldown && elapsed >= stabilityMs
 
-        val since = stableSinceMs ?: return false
-        if (nowMs - since < stabilityMs) return false
-        if (nowMs - lastSaveMs < cooldownMs) return false
+        return Evaluation(
+            progressMs = progressMs,
+            shouldSave = shouldSave,
+            inCooldown = inCooldown,
+            cooldownRemainingMs = cooldownRemainingMs,
+        )
+    }
 
-        armedForGesture = false
+    fun markSaved(nowMs: Long) {
         lastSaveMs = nowMs
         resetStability()
-        return true
     }
 
-    private fun updateStability(
-        ready: Boolean,
-        cropRect: BetweenHandsCropper.CropRect,
-        nowMs: Long,
-    ) {
-        if (!ready) {
-            resetStability()
-            return
-        }
-
+    private fun updateStability(cropRect: BetweenHandsCropper.CropRect, nowMs: Long) {
         val previous = lastCrop
         if (previous != null && !cropStable(previous, cropRect)) {
             stableSinceMs = nowMs

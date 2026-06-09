@@ -8,6 +8,7 @@
     <string name="status_two_hands_no_crop">Two hands detected — spread them apart a little.</string>
     <string name="status_ready">Two hands detected — hold steady to save.</string>
     <string name="status_holding">Hold steady… %1$.1fs / %2$.1fs</string>
+    <string name="status_save_cooldown">Saved — next auto-save in %1$.1fs</string>
     <string name="status_saving">Saving crop…</string>
     <string name="status_saved">Saved to gallery</string>
     <string name="save_crop">Save now</string>
