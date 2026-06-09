@@ -40,6 +40,14 @@ android {
     }
 }
 
+android.applicationVariants.configureEach {
+    val variant = this
+    outputs.configureEach {
+        (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
+            "VisualSelect-v${variant.versionName}-${variant.buildType.name}.apk"
+    }
+}
+
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
     implementation(composeBom)
