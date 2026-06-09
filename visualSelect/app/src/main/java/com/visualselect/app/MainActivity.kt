@@ -132,9 +132,10 @@ private fun CameraCaptureScreen() {
         }
     }
 
-    LaunchedEffect(settings.cropPaddingPx, settings.cropMode) {
+    LaunchedEffect(settings.cropPaddingPx, settings.cropMode, settings.squareCrop) {
         helper.cropPaddingPx = settings.cropPaddingPx
         helper.cropMode = settings.cropMode
+        helper.squareCrop = settings.squareCrop
     }
 
     LaunchedEffect(handSnapshot, settings.chimeOnTwoHands) {

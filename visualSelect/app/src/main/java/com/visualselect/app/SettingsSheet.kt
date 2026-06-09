@@ -111,6 +111,13 @@ fun SettingsSheet(
                 onCheckedChange = settings::updateIncludeHandsInCrop,
             )
 
+            SettingToggle(
+                label = stringResource(R.string.settings_square_crop),
+                subtitle = stringResource(R.string.settings_square_crop_hint),
+                checked = settings.squareCrop,
+                onCheckedChange = settings::updateSquareCrop,
+            )
+
             SettingLabel(text = stringResource(R.string.settings_crop_padding, settings.cropPaddingPx))
             Slider(
                 value = settings.cropPaddingPx.toFloat(),

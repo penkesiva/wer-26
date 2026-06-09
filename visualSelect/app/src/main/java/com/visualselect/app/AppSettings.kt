@@ -30,6 +30,9 @@ class AppSettings(context: Context) {
     var includeHandsInCrop by mutableStateOf(prefs.getBoolean(KEY_INCLUDE_HANDS_IN_CROP, false))
         private set
 
+    var squareCrop by mutableStateOf(prefs.getBoolean(KEY_SQUARE_CROP, true))
+        private set
+
     val cropMode: CropMode
         get() = if (includeHandsInCrop) CropMode.INCLUDE_HANDS else CropMode.BETWEEN_HANDS
 
@@ -79,6 +82,11 @@ class AppSettings(context: Context) {
         prefs.edit().putBoolean(KEY_INCLUDE_HANDS_IN_CROP, enabled).apply()
     }
 
+    fun updateSquareCrop(enabled: Boolean) {
+        squareCrop = enabled
+        prefs.edit().putBoolean(KEY_SQUARE_CROP, enabled).apply()
+    }
+
     fun updateAutoSaveEnabled(enabled: Boolean) {
         autoSaveEnabled = enabled
         prefs.edit().putBoolean(KEY_AUTO_SAVE, enabled).apply()
@@ -106,6 +114,7 @@ class AppSettings(context: Context) {
         private const val KEY_CHIME = "chime_on_two_hands"
         private const val KEY_CROP_PADDING = "crop_padding_px"
         private const val KEY_INCLUDE_HANDS_IN_CROP = "include_hands_in_crop"
+        private const val KEY_SQUARE_CROP = "square_crop"
         private const val KEY_AUTO_SAVE = "auto_save_enabled"
         private const val KEY_AUTO_SAVE_STABILITY = "auto_save_stability_sec"
         private const val KEY_AUTO_SAVE_COOLDOWN = "auto_save_cooldown_sec"

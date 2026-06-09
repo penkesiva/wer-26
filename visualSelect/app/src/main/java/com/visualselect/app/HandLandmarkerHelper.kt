@@ -30,6 +30,9 @@ class HandLandmarkerHelper(
     @Volatile
     var cropMode: CropMode = CropMode.BETWEEN_HANDS
 
+    @Volatile
+    var squareCrop: Boolean = true
+
     private var lastAppliedTimestampMs = 0L
     private var consecutiveEmptyResults = 0
     private var lastSnapshot = HandDetectionSnapshot()
@@ -87,15 +90,17 @@ class HandLandmarkerHelper(
                 return
             }
 
-            val boxes = landmarks.map { hand ->
-                BetweenHandsCropper.boundingBoxFromLandmarks(hand, imageWidth, imageHeight)
+            val handFrames = landmarks.map { hand ->
+                BetweenHandsCropper.handFrameFromLandmarks(hand, imageWidth, imageHeight)
             }
+            val boxes = handFrames.map { it.bounds }
             val crop = BetweenHandsCropper.computeCropForHands(
-                handBoxes = boxes,
+                handFrames = handFrames,
                 imageWidth = imageWidth,
                 imageHeight = imageHeight,
                 paddingPx = cropPaddingPx,
                 mode = cropMode,
+                squareCrop = squareCrop,
             )
             HandDetectionSnapshot(
                 handCount = landmarks.size,
