@@ -5,8 +5,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -23,13 +27,21 @@ fun SettingsSheet(
     settings: AppSettings,
     onDismiss: () -> Unit,
 ) {
+    val scrollState = rememberScrollState()
+
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp),
+                .verticalScroll(scrollState)
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp)
+                .padding(top = 4.dp, bottom = 24.dp),
         ) {
-            Text(text = stringResource(R.string.settings_title))
+            Text(
+                text = stringResource(R.string.settings_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
 
             SettingToggle(
                 label = stringResource(R.string.settings_autofocus),
@@ -45,24 +57,20 @@ fun SettingsSheet(
                 onCheckedChange = settings::updatePreferWideLens,
             )
 
-            Text(
-                text = stringResource(R.string.settings_zoom, settings.zoomRatio),
-                modifier = Modifier.padding(top = 16.dp),
-            )
+            SettingLabel(text = stringResource(R.string.settings_zoom, settings.zoomRatio))
             Slider(
                 value = settings.zoomRatio,
                 onValueChange = settings::updateZoomRatio,
                 valueRange = 0.5f..1f,
                 steps = 4,
             )
-            Text(text = stringResource(R.string.settings_zoom_hint))
+            SettingHint(text = stringResource(R.string.settings_zoom_hint))
 
             SettingToggle(
                 label = stringResource(R.string.settings_chime),
                 subtitle = stringResource(R.string.settings_chime_hint),
                 checked = settings.chimeOnTwoHands,
                 onCheckedChange = settings::updateChimeOnTwoHands,
-                modifier = Modifier.padding(top = 8.dp),
             )
 
             SettingToggle(
@@ -70,13 +78,11 @@ fun SettingsSheet(
                 subtitle = stringResource(R.string.settings_auto_save_hint),
                 checked = settings.autoSaveEnabled,
                 onCheckedChange = settings::updateAutoSaveEnabled,
-                modifier = Modifier.padding(top = 8.dp),
             )
 
             if (settings.autoSaveEnabled) {
-                Text(
+                SettingLabel(
                     text = stringResource(R.string.settings_auto_save_stability, settings.autoSaveStabilitySec),
-                    modifier = Modifier.padding(top = 16.dp),
                 )
                 Slider(
                     value = settings.autoSaveStabilitySec,
@@ -84,11 +90,10 @@ fun SettingsSheet(
                     valueRange = 1f..3f,
                     steps = 3,
                 )
-                Text(text = stringResource(R.string.settings_auto_save_stability_hint))
+                SettingHint(text = stringResource(R.string.settings_auto_save_stability_hint))
 
-                Text(
+                SettingLabel(
                     text = stringResource(R.string.settings_auto_save_cooldown, settings.autoSaveCooldownSec),
-                    modifier = Modifier.padding(top = 16.dp),
                 )
                 Slider(
                     value = settings.autoSaveCooldownSec,
@@ -96,7 +101,7 @@ fun SettingsSheet(
                     valueRange = 2f..10f,
                     steps = 7,
                 )
-                Text(text = stringResource(R.string.settings_auto_save_cooldown_hint))
+                SettingHint(text = stringResource(R.string.settings_auto_save_cooldown_hint))
             }
 
             SettingToggle(
@@ -104,13 +109,9 @@ fun SettingsSheet(
                 subtitle = stringResource(R.string.settings_include_hands_hint),
                 checked = settings.includeHandsInCrop,
                 onCheckedChange = settings::updateIncludeHandsInCrop,
-                modifier = Modifier.padding(top = 8.dp),
             )
 
-            Text(
-                text = stringResource(R.string.settings_crop_padding, settings.cropPaddingPx),
-                modifier = Modifier.padding(top = 16.dp),
-            )
+            SettingLabel(text = stringResource(R.string.settings_crop_padding, settings.cropPaddingPx))
             Slider(
                 value = settings.cropPaddingPx.toFloat(),
                 onValueChange = { settings.updateCropPaddingPx(it.toInt()) },
@@ -118,9 +119,28 @@ fun SettingsSheet(
                 steps = 6,
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
+}
+
+@Composable
+private fun SettingLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(top = 12.dp),
+    )
+}
+
+@Composable
+private fun SettingHint(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 2.dp, bottom = 4.dp),
+    )
 }
 
 @Composable
@@ -134,12 +154,17 @@ private fun SettingToggle(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 16.dp),
+            .padding(top = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = label)
-            Text(text = subtitle)
+            Text(text = label, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
