@@ -99,6 +99,14 @@ fun SettingsSheet(
                 Text(text = stringResource(R.string.settings_auto_save_cooldown_hint))
             }
 
+            SettingToggle(
+                label = stringResource(R.string.settings_include_hands),
+                subtitle = stringResource(R.string.settings_include_hands_hint),
+                checked = settings.includeHandsInCrop,
+                onCheckedChange = settings::updateIncludeHandsInCrop,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+
             Text(
                 text = stringResource(R.string.settings_crop_padding, settings.cropPaddingPx),
                 modifier = Modifier.padding(top = 16.dp),

@@ -45,19 +45,18 @@ object BetweenHandsCropper {
         )
     }
 
-    /**
-     * Prefers the strip between both hands; falls back to the union of both boxes when
-     * hands overlap or the gap is too narrow (common when the second hand enters frame).
-     */
     fun computeCropForHands(
         handBoxes: List<RectF>,
         imageWidth: Int,
         imageHeight: Int,
         paddingPx: Int = 24,
+        mode: CropMode = CropMode.BETWEEN_HANDS,
     ): CropRect? {
         if (handBoxes.size < 2 || imageWidth <= 0 || imageHeight <= 0) return null
-        return computeBetweenHands(handBoxes, imageWidth, imageHeight, paddingPx)
-            ?: computeUnionOfHands(handBoxes, imageWidth, imageHeight, paddingPx)
+        return when (mode) {
+            CropMode.BETWEEN_HANDS -> computeBetweenHands(handBoxes, imageWidth, imageHeight, paddingPx)
+            CropMode.INCLUDE_HANDS -> computeUnionOfHands(handBoxes, imageWidth, imageHeight, paddingPx)
+        }
     }
 
     fun computeBetweenHands(
@@ -72,8 +71,10 @@ object BetweenHandsCropper {
         val leftHand = sorted[0]
         val rightHand = sorted[1]
 
-        val innerLeft = leftHand.right + paddingPx
-        val innerRight = rightHand.left - paddingPx
+        // Small inset from each hand so fingers are not in the saved crop.
+        val handInsetPx = (paddingPx / 4).coerceIn(4, 12)
+        val innerLeft = leftHand.right + handInsetPx
+        val innerRight = rightHand.left - handInsetPx
         if (innerLeft >= innerRight) return null
 
         val left = innerLeft.toInt().coerceIn(0, imageWidth - 1)
@@ -82,7 +83,7 @@ object BetweenHandsCropper {
         val bottom = (maxOf(leftHand.bottom, rightHand.bottom) + paddingPx).toInt().coerceIn(top + 1, imageHeight)
 
         val rect = CropRect(left, top, right, bottom)
-        return if (rect.isValid(minSizePx = 32)) rect else null
+        return if (rect.isValid(minSizePx = 24)) rect else null
     }
 
     fun computeUnionOfHands(

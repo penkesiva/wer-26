@@ -5,7 +5,8 @@
     <string name="grant_camera">Grant camera</string>
     <string name="status_waiting">Point camera at scene and bring both hands into frame.</string>
     <string name="status_one_hand">One hand detected — show both hands to frame a region.</string>
-    <string name="status_two_hands_no_crop">Two hands detected — spread them apart a little.</string>
+    <string name="status_two_hands_no_crop">Two hands detected — spread them apart to crop between hands.</string>
+    <string name="status_two_hands_no_crop_include">Two hands detected — move hands into frame.</string>
     <string name="status_ready">Two hands detected — hold steady to save.</string>
     <string name="status_holding">Hold steady… %1$.1fs / %2$.1fs</string>
     <string name="status_save_cooldown">Saved — next auto-save in %1$.1fs</string>
@@ -25,6 +26,8 @@
     <string name="settings_zoom_hint">Slide left for maximum field of view.</string>
     <string name="settings_chime">Chime when both hands detected</string>
     <string name="settings_chime_hint">Plays once when two hands enter frame.</string>
+    <string name="settings_include_hands">Include hands in crop</string>
+    <string name="settings_include_hands_hint">Off = save only the region between hands (default). On = frame both hands too.</string>
     <string name="settings_crop_padding">Crop padding: %d px</string>
     <string name="settings_auto_save">Auto-save to gallery</string>
     <string name="settings_auto_save_hint">Saves when both hands stay steady (Idea 1 style).</string>

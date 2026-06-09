@@ -132,8 +132,9 @@ private fun CameraCaptureScreen() {
         }
     }
 
-    LaunchedEffect(settings.cropPaddingPx) {
+    LaunchedEffect(settings.cropPaddingPx, settings.cropMode) {
         helper.cropPaddingPx = settings.cropPaddingPx
+        helper.cropMode = settings.cropMode
     }
 
     LaunchedEffect(handSnapshot, settings.chimeOnTwoHands) {
@@ -250,7 +251,13 @@ private fun CameraCaptureScreen() {
                         settings.autoSaveStabilitySec,
                     )
                 handSnapshot.isReady -> stringResource(R.string.status_ready)
-                handSnapshot.handCount >= 2 -> stringResource(R.string.status_two_hands_no_crop)
+                handSnapshot.handCount >= 2 -> stringResource(
+                    if (settings.includeHandsInCrop) {
+                        R.string.status_two_hands_no_crop_include
+                    } else {
+                        R.string.status_two_hands_no_crop
+                    },
+                )
                 handSnapshot.handCount == 1 -> stringResource(R.string.status_one_hand)
                 else -> stringResource(R.string.status_waiting)
             },
