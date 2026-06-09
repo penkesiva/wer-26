@@ -26,6 +26,17 @@ Prototype Android app for **Idea 1** — live camera preview, detect **two hands
 3. **BetweenHandsCropper** — bounding boxes from landmarks; crop rectangle spans **inner edges** between left and right hand (with padding).
 4. Yellow overlay = crop region; blue = hand boxes.
 5. **Save crop** writes `Pictures/VisualSelect/visual_select_<timestamp>.png` via **MediaStore** (no legacy storage permission on API 29+).
+6. **Settings** (top-right): autofocus, wide-angle lens, zoom / FOV, chime, crop padding.
+
+## Settings defaults
+
+| Option | Default |
+| --- | --- |
+| Autofocus | **Off** (fixed focus for stable framing) |
+| Wide-angle lens | **On** (widest back camera when available) |
+| Zoom | **0.5** (widest FOV on device) |
+| Chime on two hands | **On** (once per entry into two-hand state) |
+| Crop padding | 24 px |
 
 ## Assumptions (confirm if you want changes)
 

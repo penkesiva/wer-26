@@ -21,6 +21,9 @@ class HandLandmarkerHelper(
     @Volatile
     private var closed = false
 
+    @Volatile
+    var cropPaddingPx: Int = 24
+
     fun setup() {
         val baseOptions = BaseOptions.builder()
             .setModelAssetPath("hand_landmarker.task")
@@ -67,7 +70,7 @@ class HandLandmarkerHelper(
         val boxes = landmarks.map { hand ->
             BetweenHandsCropper.boundingBoxFromLandmarks(hand, imageWidth, imageHeight)
         }
-        val crop = BetweenHandsCropper.computeBetweenHands(boxes, imageWidth, imageHeight)
+        val crop = BetweenHandsCropper.computeBetweenHands(boxes, imageWidth, imageHeight, cropPaddingPx)
         onHandsDetected(landmarks.size, crop, boxes)
     }
 

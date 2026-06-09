@@ -10,10 +10,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
@@ -25,9 +23,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,11 +40,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.util.concurrent.Executors
 
 class MainActivity : ComponentActivity() {
@@ -91,11 +92,15 @@ private fun VisualSelectScreen() {
 private fun CameraCaptureScreen() {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val settings = remember { AppSettings(context) }
+    val chimePlayer = remember { ChimePlayer(context) }
 
     var handCount by remember { mutableIntStateOf(0) }
     var cropRect by remember { mutableStateOf<BetweenHandsCropper.CropRect?>(null) }
     var handBoxes by remember { mutableStateOf<List<RectF>>(emptyList()) }
     var previewSize by remember { mutableStateOf(Size.Zero) }
+    var showSettings by remember { mutableStateOf(false) }
+    var hadTwoHands by remember { mutableStateOf(false) }
 
     val latestBitmap = remember { mutableStateOf<Bitmap?>(null) }
     val helper = remember {
@@ -107,7 +112,23 @@ private fun CameraCaptureScreen() {
     }
 
     DisposableEffect(Unit) {
-        onDispose { helper.close() }
+        onDispose {
+            helper.close()
+            chimePlayer.release()
+            latestBitmap.value?.recycle()
+        }
+    }
+
+    LaunchedEffect(settings.cropPaddingPx) {
+        helper.cropPaddingPx = settings.cropPaddingPx
+    }
+
+    LaunchedEffect(handCount, cropRect, settings.chimeOnTwoHands) {
+        val ready = handCount >= 2 && cropRect != null
+        if (settings.chimeOnTwoHands && ready && !hadTwoHands) {
+            chimePlayer.playTwoHandsChime()
+        }
+        hadTwoHands = ready
     }
 
     val analyzerExecutor = remember { Executors.newSingleThreadExecutor() }
@@ -117,40 +138,36 @@ private fun CameraCaptureScreen() {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { ctx ->
-                PreviewView(ctx).also { previewView ->
-                    val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                    cameraProviderFuture.addListener({
-                        val cameraProvider = cameraProviderFuture.get()
-                        val preview = Preview.Builder().build().also {
-                            it.surfaceProvider = previewView.surfaceProvider
-                        }
-
-                        val analysis = ImageAnalysis.Builder()
-                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                            .build()
+        key(settings.cameraConfigVersion) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                    PreviewView(ctx).also { previewView ->
+                        val analysis = CameraSession.buildImageAnalysis(settings.autofocusEnabled)
 
                         analysis.setAnalyzer(analyzerExecutor) { imageProxy ->
                             processFrame(imageProxy, helper, latestBitmap)
                         }
 
-                        cameraProvider.unbindAll()
-                        cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            CameraSelector.DEFAULT_BACK_CAMERA,
-                            preview,
-                            analysis,
+                        CameraSession.bind(
+                            lifecycleOwner = lifecycleOwner,
+                            previewView = previewView,
+                            settings = settings,
+                            analysis = analysis,
+                            onCameraReady = {},
                         )
-                    }, ContextCompat.getMainExecutor(ctx))
-                }
-            },
-            update = { previewView ->
-                previewSize = Size(previewView.width.toFloat(), previewView.height.toFloat())
-            },
-        )
+                    }
+                },
+                onRelease = {
+                    runCatching {
+                        ProcessCameraProvider.getInstance(context).get().unbindAll()
+                    }
+                },
+                update = { previewView ->
+                    previewSize = Size(previewView.width.toFloat(), previewView.height.toFloat())
+                },
+            )
+        }
 
         if (previewSize.width > 0f && previewSize.height > 0f) {
             OverlayCanvas(
@@ -174,6 +191,15 @@ private fun CameraCaptureScreen() {
                 .align(Alignment.TopCenter)
                 .padding(top = 24.dp),
         )
+
+        TextButton(
+            onClick = { showSettings = true },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(8.dp),
+        ) {
+            Text(stringResource(R.string.settings))
+        }
 
         Button(
             onClick = {
@@ -202,6 +228,13 @@ private fun CameraCaptureScreen() {
         ) {
             Text(stringResource(R.string.save_crop))
         }
+    }
+
+    if (showSettings) {
+        SettingsSheet(
+            settings = settings,
+            onDismiss = { showSettings = false },
+        )
     }
 }
 
@@ -249,7 +282,7 @@ private fun OverlayCanvas(
             drawRect(
                 color = Color(0xFF4FC3F7),
                 topLeft = Offset(mapX(box.left), mapY(box.top)),
-                size = Size((box.width()) * scale, (box.height()) * scale),
+                size = Size(box.width() * scale, box.height() * scale),
                 style = Stroke(width = 3f),
             )
         }

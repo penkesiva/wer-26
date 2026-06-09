@@ -10,4 +10,15 @@
     <string name="saved_to_gallery">Saved crop to gallery</string>
     <string name="save_failed">Could not save crop</string>
     <string name="no_crop">No valid region between hands yet</string>
+    <string name="settings">Settings</string>
+    <string name="settings_title">Camera &amp; detection</string>
+    <string name="settings_autofocus">Autofocus</string>
+    <string name="settings_autofocus_hint">Off by default for a stable crop region.</string>
+    <string name="settings_wide_lens">Prefer wide-angle lens</string>
+    <string name="settings_wide_lens_hint">Uses the widest back camera when available.</string>
+    <string name="settings_zoom">Zoom: %.2fx (lower = wider FOV)</string>
+    <string name="settings_zoom_hint">Slide left for maximum field of view.</string>
+    <string name="settings_chime">Chime when both hands detected</string>
+    <string name="settings_chime_hint">Plays once when two hands enter frame.</string>
+    <string name="settings_crop_padding">Crop padding: %d px</string>
 </resources>

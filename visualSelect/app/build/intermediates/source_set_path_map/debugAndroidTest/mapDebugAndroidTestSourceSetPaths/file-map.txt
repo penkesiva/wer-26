@@ -1,0 +1,4 @@
+com.visualselect.app.test.app-androidTest-0 /Users/sivapenke/workspace/Projects/wrk-2026/visualSelect/app/build/generated/res/resValues/androidTest/debug
+com.visualselect.app.test.app-mergeDebugAndroidTestResources-1 /Users/sivapenke/workspace/Projects/wrk-2026/visualSelect/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/merged.dir
+com.visualselect.app.test.app-mergeDebugAndroidTestResources-2 /Users/sivapenke/workspace/Projects/wrk-2026/visualSelect/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/stripped.dir
+com.visualselect.app.test.app-debugAndroidTest-3 /Users/sivapenke/workspace/Projects/wrk-2026/visualSelect/app/build/intermediates/merged_res/debugAndroidTest/mergeDebugAndroidTestResources

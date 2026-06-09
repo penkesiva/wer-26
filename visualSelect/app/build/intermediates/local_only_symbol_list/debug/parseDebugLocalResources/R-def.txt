@@ -10,6 +10,17 @@ string no_crop
 string save_crop
 string save_failed
 string saved_to_gallery
+string settings
+string settings_autofocus
+string settings_autofocus_hint
+string settings_chime
+string settings_chime_hint
+string settings_crop_padding
+string settings_title
+string settings_wide_lens
+string settings_wide_lens_hint
+string settings_zoom
+string settings_zoom_hint
 string status_one_hand
 string status_ready
 string status_waiting
