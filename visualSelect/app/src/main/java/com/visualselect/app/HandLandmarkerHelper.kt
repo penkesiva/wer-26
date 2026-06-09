@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.RectF
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.camera.core.ImageProxy
 import com.google.mediapipe.framework.image.BitmapImageBuilder
@@ -14,15 +16,20 @@ import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 
 class HandLandmarkerHelper(
     context: Context,
-    private val onHandsDetected: (handCount: Int, cropRect: BetweenHandsCropper.CropRect?, handBoxes: List<RectF>) -> Unit,
+    private val onHandsDetected: (HandDetectionSnapshot) -> Unit,
 ) {
     private val appContext = context.applicationContext
+    private val mainHandler = Handler(Looper.getMainLooper())
     private var handLandmarker: HandLandmarker? = null
     @Volatile
     private var closed = false
 
     @Volatile
     var cropPaddingPx: Int = 24
+
+    private var lastAppliedTimestampMs = 0L
+    private var consecutiveEmptyResults = 0
+    private var lastSnapshot = HandDetectionSnapshot()
 
     fun setup() {
         val baseOptions = BaseOptions.builder()
@@ -56,22 +63,53 @@ class HandLandmarkerHelper(
     }
 
     private fun dispatchResult(result: HandLandmarkerResult) {
-        val landmarks = result.landmarks()
-        if (landmarks.isEmpty()) {
-            onHandsDetected(0, null, emptyList())
+        val timestampMs = result.timestampMs()
+        if (timestampMs < lastAppliedTimestampMs) {
             return
         }
+        lastAppliedTimestampMs = timestampMs
 
-        // Normalized coords are relative to the last submitted bitmap size.
-        val imageWidth = lastFrameWidth
-        val imageHeight = lastFrameHeight
-        if (imageWidth <= 0 || imageHeight <= 0) return
+        val landmarks = result.landmarks()
+        val snapshot = if (landmarks.isEmpty()) {
+            consecutiveEmptyResults++
+            if (consecutiveEmptyResults < EMPTY_FRAMES_BEFORE_CLEAR) {
+                return
+            }
+            HandDetectionSnapshot()
+        } else {
+            consecutiveEmptyResults = 0
+            val imageWidth = lastFrameWidth
+            val imageHeight = lastFrameHeight
+            if (imageWidth <= 0 || imageHeight <= 0) {
+                return
+            }
 
-        val boxes = landmarks.map { hand ->
-            BetweenHandsCropper.boundingBoxFromLandmarks(hand, imageWidth, imageHeight)
+            val boxes = landmarks.map { hand ->
+                BetweenHandsCropper.boundingBoxFromLandmarks(hand, imageWidth, imageHeight)
+            }
+            val crop = BetweenHandsCropper.computeCropForHands(
+                boxes,
+                imageWidth,
+                imageHeight,
+                cropPaddingPx,
+            )
+            HandDetectionSnapshot(
+                handCount = landmarks.size,
+                cropRect = crop,
+                handBoxes = boxes,
+            )
         }
-        val crop = BetweenHandsCropper.computeBetweenHands(boxes, imageWidth, imageHeight, cropPaddingPx)
-        onHandsDetected(landmarks.size, crop, boxes)
+
+        if (snapshot == lastSnapshot) {
+            return
+        }
+        lastSnapshot = snapshot
+
+        mainHandler.post {
+            if (!closed) {
+                onHandsDetected(snapshot)
+            }
+        }
     }
 
     @Volatile
@@ -89,6 +127,7 @@ class HandLandmarkerHelper(
 
     companion object {
         private const val TAG = "HandLandmarkerHelper"
+        private const val EMPTY_FRAMES_BEFORE_CLEAR = 3
 
         fun imageProxyToBitmap(image: ImageProxy): Bitmap {
             val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)

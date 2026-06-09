@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,7 +31,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -104,9 +104,7 @@ private fun CameraCaptureScreen() {
     val settings = remember { AppSettings(context) }
     val chimePlayer = remember { ChimePlayer(context) }
 
-    var handCount by remember { mutableIntStateOf(0) }
-    var cropRect by remember { mutableStateOf<BetweenHandsCropper.CropRect?>(null) }
-    var handBoxes by remember { mutableStateOf<List<RectF>>(emptyList()) }
+    var handSnapshot by remember { mutableStateOf(HandDetectionSnapshot()) }
     var previewSize by remember { mutableStateOf(Size.Zero) }
     var showSettings by remember { mutableStateOf(false) }
     var hadTwoHands by remember { mutableStateOf(false) }
@@ -122,10 +120,8 @@ private fun CameraCaptureScreen() {
 
     val latestBitmap = remember { mutableStateOf<Bitmap?>(null) }
     val helper = remember {
-        HandLandmarkerHelper(context) { count, rect, boxes ->
-            handCount = count
-            cropRect = rect
-            handBoxes = boxes
+        HandLandmarkerHelper(context) { snapshot ->
+            handSnapshot = snapshot
         }.also { it.setup() }
     }
 
@@ -141,8 +137,8 @@ private fun CameraCaptureScreen() {
         helper.cropPaddingPx = settings.cropPaddingPx
     }
 
-    LaunchedEffect(handCount, cropRect, settings.chimeOnTwoHands) {
-        val ready = handCount >= 2 && cropRect != null
+    LaunchedEffect(handSnapshot, settings.chimeOnTwoHands) {
+        val ready = handSnapshot.isReady
         if (settings.chimeOnTwoHands && ready && !hadTwoHands) {
             chimePlayer.playTwoHandsChime()
         }
@@ -158,11 +154,12 @@ private fun CameraCaptureScreen() {
             autoSaveTracker.stabilityMs = (settings.autoSaveStabilitySec * 1000).toLong()
             autoSaveTracker.cooldownMs = (settings.autoSaveCooldownSec * 1000).toLong()
 
-            val (count, rect) = snapshotFlow { handCount to cropRect }.first()
-            val ready = count >= 2 && rect != null
+            val snapshot = snapshotFlow { handSnapshot }.first()
+            val ready = snapshot.isReady
+            val rect = snapshot.cropRect
             val now = System.currentTimeMillis()
 
-            if (settings.autoSaveEnabled && ready) {
+            if (settings.autoSaveEnabled && ready && rect != null) {
                 val progressMs = autoSaveTracker.stableProgressMs(true, rect, now)
                 holdProgressSec = progressMs / 1000f
 
@@ -229,8 +226,8 @@ private fun CameraCaptureScreen() {
 
         if (previewSize.width > 0f && previewSize.height > 0f) {
             OverlayCanvas(
-                handBoxes = handBoxes,
-                cropRect = cropRect,
+                handBoxes = handSnapshot.handBoxes,
+                cropRect = handSnapshot.cropRect,
                 frameWidth = helper.lastFrameWidth,
                 frameHeight = helper.lastFrameHeight,
                 previewWidth = previewSize.width,
@@ -242,14 +239,15 @@ private fun CameraCaptureScreen() {
             text = when {
                 isSaving -> stringResource(R.string.status_saving)
                 justSaved -> stringResource(R.string.status_saved)
-                handCount >= 2 && cropRect != null && settings.autoSaveEnabled && holdProgressSec > 0f ->
+                handSnapshot.isReady && settings.autoSaveEnabled && holdProgressSec > 0f ->
                     stringResource(
                         R.string.status_holding,
                         holdProgressSec,
                         settings.autoSaveStabilitySec,
                     )
-                handCount >= 2 && cropRect != null -> stringResource(R.string.status_ready)
-                handCount == 1 -> stringResource(R.string.status_one_hand)
+                handSnapshot.isReady -> stringResource(R.string.status_ready)
+                handSnapshot.handCount >= 2 -> stringResource(R.string.status_two_hands_no_crop)
+                handSnapshot.handCount == 1 -> stringResource(R.string.status_one_hand)
                 else -> stringResource(R.string.status_waiting)
             },
             color = Color.White,
@@ -264,17 +262,17 @@ private fun CameraCaptureScreen() {
                 .align(Alignment.TopEnd)
                 .padding(8.dp),
         ) {
-            Text(stringResource(R.string.settings))
+            Text(stringResource(R.string.settings), color = Color.White)
         }
 
-        TextButton(
+        Button(
             onClick = {
-                val rect = cropRect
+                val rect = handSnapshot.cropRect
                 if (rect == null) {
                     Toast.makeText(context, R.string.no_crop, Toast.LENGTH_SHORT).show()
-                    return@TextButton
+                    return@Button
                 }
-                if (isSaving) return@TextButton
+                if (isSaving) return@Button
                 scope.launch {
                     isSaving = true
                     val saved = saveCropToGallery(context, latestBitmap.value, rect)
@@ -290,7 +288,13 @@ private fun CameraCaptureScreen() {
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .padding(24.dp),
-            enabled = handCount >= 2 && cropRect != null && !isSaving,
+            enabled = handSnapshot.isReady && !isSaving,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White,
+                contentColor = Color.Black,
+                disabledContainerColor = Color.White.copy(alpha = 0.35f),
+                disabledContentColor = Color.Black.copy(alpha = 0.45f),
+            ),
         ) {
             Text(stringResource(R.string.save_crop))
         }
