@@ -65,6 +65,40 @@ fun SettingsSheet(
                 modifier = Modifier.padding(top = 8.dp),
             )
 
+            SettingToggle(
+                label = stringResource(R.string.settings_auto_save),
+                subtitle = stringResource(R.string.settings_auto_save_hint),
+                checked = settings.autoSaveEnabled,
+                onCheckedChange = settings::updateAutoSaveEnabled,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+
+            if (settings.autoSaveEnabled) {
+                Text(
+                    text = stringResource(R.string.settings_auto_save_stability, settings.autoSaveStabilitySec),
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+                Slider(
+                    value = settings.autoSaveStabilitySec,
+                    onValueChange = settings::updateAutoSaveStabilitySec,
+                    valueRange = 1f..3f,
+                    steps = 3,
+                )
+                Text(text = stringResource(R.string.settings_auto_save_stability_hint))
+
+                Text(
+                    text = stringResource(R.string.settings_auto_save_cooldown, settings.autoSaveCooldownSec),
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+                Slider(
+                    value = settings.autoSaveCooldownSec,
+                    onValueChange = settings::updateAutoSaveCooldownSec,
+                    valueRange = 2f..10f,
+                    steps = 7,
+                )
+                Text(text = stringResource(R.string.settings_auto_save_cooldown_hint))
+            }
+
             Text(
                 text = stringResource(R.string.settings_crop_padding, settings.cropPaddingPx),
                 modifier = Modifier.padding(top = 16.dp),

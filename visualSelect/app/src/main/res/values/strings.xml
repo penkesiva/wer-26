@@ -5,8 +5,11 @@
     <string name="grant_camera">Grant camera</string>
     <string name="status_waiting">Point camera at scene and bring both hands into frame.</string>
     <string name="status_one_hand">One hand detected — show both hands to frame a region.</string>
-    <string name="status_ready">Two hands detected — tap Save crop.</string>
-    <string name="save_crop">Save crop</string>
+    <string name="status_ready">Two hands detected — hold steady to save.</string>
+    <string name="status_holding">Hold steady… %1$.1fs / %2$.1fs</string>
+    <string name="status_saving">Saving crop…</string>
+    <string name="status_saved">Saved to gallery</string>
+    <string name="save_crop">Save now</string>
     <string name="saved_to_gallery">Saved crop to gallery</string>
     <string name="save_failed">Could not save crop</string>
     <string name="no_crop">No valid region between hands yet</string>
@@ -21,4 +24,10 @@
     <string name="settings_chime">Chime when both hands detected</string>
     <string name="settings_chime_hint">Plays once when two hands enter frame.</string>
     <string name="settings_crop_padding">Crop padding: %d px</string>
+    <string name="settings_auto_save">Auto-save to gallery</string>
+    <string name="settings_auto_save_hint">Saves when both hands stay steady (Idea 1 style).</string>
+    <string name="settings_auto_save_stability">Hold steady: %.1f s</string>
+    <string name="settings_auto_save_stability_hint">How long to hold the gesture before saving.</string>
+    <string name="settings_auto_save_cooldown">Save cooldown: %.0f s</string>
+    <string name="settings_auto_save_cooldown_hint">Minimum gap between gallery saves.</string>
 </resources>

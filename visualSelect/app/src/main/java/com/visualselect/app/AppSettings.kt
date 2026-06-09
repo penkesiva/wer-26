@@ -25,6 +25,15 @@ class AppSettings(context: Context) {
     var cropPaddingPx by mutableIntStateOf(prefs.getInt(KEY_CROP_PADDING, 24))
         private set
 
+    var autoSaveEnabled by mutableStateOf(prefs.getBoolean(KEY_AUTO_SAVE, true))
+        private set
+
+    var autoSaveStabilitySec by mutableFloatStateOf(prefs.getFloat(KEY_AUTO_SAVE_STABILITY, 1.5f))
+        private set
+
+    var autoSaveCooldownSec by mutableFloatStateOf(prefs.getFloat(KEY_AUTO_SAVE_COOLDOWN, 3f))
+        private set
+
     /** Bumps when any camera-related setting changes so the preview rebinds. */
     var cameraConfigVersion by mutableIntStateOf(0)
         private set
@@ -57,6 +66,21 @@ class AppSettings(context: Context) {
         prefs.edit().putInt(KEY_CROP_PADDING, cropPaddingPx).apply()
     }
 
+    fun updateAutoSaveEnabled(enabled: Boolean) {
+        autoSaveEnabled = enabled
+        prefs.edit().putBoolean(KEY_AUTO_SAVE, enabled).apply()
+    }
+
+    fun updateAutoSaveStabilitySec(seconds: Float) {
+        autoSaveStabilitySec = seconds.coerceIn(1f, 3f)
+        prefs.edit().putFloat(KEY_AUTO_SAVE_STABILITY, autoSaveStabilitySec).apply()
+    }
+
+    fun updateAutoSaveCooldownSec(seconds: Float) {
+        autoSaveCooldownSec = seconds.coerceIn(2f, 10f)
+        prefs.edit().putFloat(KEY_AUTO_SAVE_COOLDOWN, autoSaveCooldownSec).apply()
+    }
+
     private fun bumpCameraConfig() {
         cameraConfigVersion += 1
     }
@@ -68,5 +92,8 @@ class AppSettings(context: Context) {
         private const val KEY_ZOOM_RATIO = "zoom_ratio"
         private const val KEY_CHIME = "chime_on_two_hands"
         private const val KEY_CROP_PADDING = "crop_padding_px"
+        private const val KEY_AUTO_SAVE = "auto_save_enabled"
+        private const val KEY_AUTO_SAVE_STABILITY = "auto_save_stability_sec"
+        private const val KEY_AUTO_SAVE_COOLDOWN = "auto_save_cooldown_sec"
     }
 }

@@ -29,10 +29,13 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -46,6 +49,12 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.util.concurrent.Executors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,6 +110,15 @@ private fun CameraCaptureScreen() {
     var previewSize by remember { mutableStateOf(Size.Zero) }
     var showSettings by remember { mutableStateOf(false) }
     var hadTwoHands by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
+    var justSaved by remember { mutableStateOf(false) }
+    var holdProgressSec by remember { mutableFloatStateOf(0f) }
+
+    val autoSaveTracker = remember {
+        AutoSaveTracker(stabilityMs = 1500L, cooldownMs = 3000L)
+    }
+
+    val scope = rememberCoroutineScope()
 
     val latestBitmap = remember { mutableStateOf<Bitmap?>(null) }
     val helper = remember {
@@ -129,6 +147,46 @@ private fun CameraCaptureScreen() {
             chimePlayer.playTwoHandsChime()
         }
         hadTwoHands = ready
+    }
+
+    LaunchedEffect(
+        settings.autoSaveEnabled,
+        settings.autoSaveStabilitySec,
+        settings.autoSaveCooldownSec,
+    ) {
+        while (isActive) {
+            autoSaveTracker.stabilityMs = (settings.autoSaveStabilitySec * 1000).toLong()
+            autoSaveTracker.cooldownMs = (settings.autoSaveCooldownSec * 1000).toLong()
+
+            val (count, rect) = snapshotFlow { handCount to cropRect }.first()
+            val ready = count >= 2 && rect != null
+            val now = System.currentTimeMillis()
+
+            if (settings.autoSaveEnabled && ready) {
+                val progressMs = autoSaveTracker.stableProgressMs(true, rect, now)
+                holdProgressSec = progressMs / 1000f
+
+                if (!isSaving && autoSaveTracker.shouldSave(true, rect, now)) {
+                    isSaving = true
+                    val frame = snapshotFlow { latestBitmap.value }.first()
+                    val saved = saveCropToGallery(context, frame, rect)
+                    isSaving = false
+                    if (saved) {
+                        justSaved = true
+                        Toast.makeText(context, R.string.saved_to_gallery, Toast.LENGTH_SHORT).show()
+                        delay(2000)
+                        justSaved = false
+                    } else {
+                        Toast.makeText(context, R.string.save_failed, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else {
+                holdProgressSec = 0f
+                autoSaveTracker.stableProgressMs(ready, rect, now)
+            }
+
+            delay(100)
+        }
     }
 
     val analyzerExecutor = remember { Executors.newSingleThreadExecutor() }
@@ -182,6 +240,14 @@ private fun CameraCaptureScreen() {
 
         Text(
             text = when {
+                isSaving -> stringResource(R.string.status_saving)
+                justSaved -> stringResource(R.string.status_saved)
+                handCount >= 2 && cropRect != null && settings.autoSaveEnabled && holdProgressSec > 0f ->
+                    stringResource(
+                        R.string.status_holding,
+                        holdProgressSec,
+                        settings.autoSaveStabilitySec,
+                    )
                 handCount >= 2 && cropRect != null -> stringResource(R.string.status_ready)
                 handCount == 1 -> stringResource(R.string.status_one_hand)
                 else -> stringResource(R.string.status_waiting)
@@ -201,30 +267,30 @@ private fun CameraCaptureScreen() {
             Text(stringResource(R.string.settings))
         }
 
-        Button(
+        TextButton(
             onClick = {
-                val frame = latestBitmap.value
                 val rect = cropRect
-                if (frame == null || rect == null) {
+                if (rect == null) {
                     Toast.makeText(context, R.string.no_crop, Toast.LENGTH_SHORT).show()
-                    return@Button
+                    return@TextButton
                 }
-                val cropped = BetweenHandsCropper.cropBitmap(frame, rect)
-                val saved = GallerySaver.savePng(context, cropped)
-                Toast.makeText(
-                    context,
-                    if (saved) R.string.saved_to_gallery else R.string.save_failed,
-                    Toast.LENGTH_SHORT,
-                ).show()
-                if (cropped !== frame) {
-                    cropped.recycle()
+                if (isSaving) return@TextButton
+                scope.launch {
+                    isSaving = true
+                    val saved = saveCropToGallery(context, latestBitmap.value, rect)
+                    isSaving = false
+                    Toast.makeText(
+                        context,
+                        if (saved) R.string.saved_to_gallery else R.string.save_failed,
+                        Toast.LENGTH_SHORT,
+                    ).show()
                 }
             },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .padding(24.dp),
-            enabled = handCount >= 2 && cropRect != null,
+            enabled = handCount >= 2 && cropRect != null && !isSaving,
         ) {
             Text(stringResource(R.string.save_crop))
         }
@@ -236,6 +302,20 @@ private fun CameraCaptureScreen() {
             onDismiss = { showSettings = false },
         )
     }
+}
+
+private suspend fun saveCropToGallery(
+    context: android.content.Context,
+    frame: Bitmap?,
+    rect: BetweenHandsCropper.CropRect,
+): Boolean = withContext(Dispatchers.IO) {
+    if (frame == null) return@withContext false
+    val cropped = BetweenHandsCropper.cropBitmap(frame, rect)
+    val saved = GallerySaver.savePng(context, cropped)
+    if (cropped !== frame) {
+        cropped.recycle()
+    }
+    saved
 }
 
 private fun processFrame(
