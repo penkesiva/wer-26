@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Visual Select</string>
+    <string name="camera_permission_required">Camera permission is required to detect hands.</string>
+    <string name="grant_camera">Grant camera</string>
+    <string name="status_waiting">Point camera at scene and bring both hands into frame.</string>
+    <string name="status_one_hand">One hand detected — show both hands to frame a region.</string>
+    <string name="status_ready">Two hands detected — tap Save crop.</string>
+    <string name="save_crop">Save crop</string>
+    <string name="saved_to_gallery">Saved crop to gallery</string>
+    <string name="save_failed">Could not save crop</string>
+    <string name="no_crop">No valid region between hands yet</string>
+</resources>

@@ -1,0 +1,1 @@
+# VisualSelect — default ProGuard rules
