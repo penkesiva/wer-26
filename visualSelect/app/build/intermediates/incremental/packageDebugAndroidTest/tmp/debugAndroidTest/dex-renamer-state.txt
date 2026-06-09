@@ -1,4 +1,0 @@
-#Mon Jun 08 21:38:10 PDT 2026
-base.0=/Users/sivapenke/workspace/Projects/wrk-2026/visualSelect/app/build/intermediates/dex/debugAndroidTest/mergeProjectDexDebugAndroidTest/0/classes.dex
-path.0=0/classes.dex
-renamed.0=classes.dex
